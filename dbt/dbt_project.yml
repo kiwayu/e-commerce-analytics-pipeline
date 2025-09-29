@@ -1,22 +1,31 @@
-name: 'ecommerce_analytics'
-version: '1.0.0'
+name: ecommerce_analytics
+version: 1.0.0
 config-version: 2
 
 # This setting configures which "profile" dbt uses for this project.
-profile: 'ecommerce'
+profile: ecommerce
 
 # These configurations specify where dbt should look for different types of files.
-model-paths: ["models"]
-analysis-paths: ["analyses"]
-test-paths: ["tests"]
-seed-paths: ["seeds"]
-macro-paths: ["macros"]
-snapshot-paths: ["snapshots"]
+model-paths:
+  - models
+analysis-paths:
+  - analyses
+test-paths:
+  - tests
+seed-paths:
+  - seeds
+macro-paths:
+  - macros
+snapshot-paths:
+  - snapshots
 
-target-path: "target"  # directory which will store compiled SQL files
-clean-targets:         # directories to be removed by `dbt clean`
-  - "target"
-  - "dbt_packages"
+# Directory which will store compiled SQL files
+target-path: target
+
+# Directories to be removed by `dbt clean`
+clean-targets:
+  - target
+  - dbt_packages
 
 # Configuring models
 models:
@@ -108,16 +117,24 @@ vars:
   high_value_customer_threshold: 1000.00
   
   # Currency configurations
-  base_currency: 'USD'
+  base_currency: USD
   
 # On-run hooks
 on-run-start:
   - "{{ log('Starting dbt run for ecommerce analytics', info=True) }}"
-  - "CREATE SCHEMA IF NOT EXISTS {{ target.schema }}_logs"
+  - create schema if not exists {{ target.schema }}_logs
 
 on-run-end:
   - "{{ log('Completed dbt run for ecommerce analytics', info=True) }}"
-  - "INSERT INTO {{ target.schema }}_logs.dbt_run_log (run_id, start_time, end_time, status) VALUES ('{{ invocation_id }}', '{{ run_started_at }}', CURRENT_TIMESTAMP, 'SUCCESS')"
+  - >
+    insert into {{ target.schema }}_logs.dbt_run_log 
+    (run_id, start_time, end_time, status) 
+    values (
+      '{{ invocation_id }}', 
+      '{{ run_started_at }}', 
+      current_timestamp, 
+      'success'
+    )
 
 # Quoting configurations
 quoting:

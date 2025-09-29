@@ -1,0 +1,112 @@
+version: 2
+
+sources:
+  - name: raw
+    description: Raw data from source systems
+    database: ecommerce
+    schema: raw
+    tables:
+      - name: raw_orders
+        description: Raw order data from e-commerce platform
+        columns:
+          - name: id
+            description: Unique system-generated identifier
+            data_tests:
+              - unique
+              - not_null
+
+          - name: order_id
+            description: Business order identifier
+            data_tests:
+              - unique
+              - not_null
+
+          - name: customer_id
+            description: Customer identifier
+            data_tests:
+              - not_null
+
+          - name: order_date
+            description: Date and time when order was placed
+            data_tests:
+              - not_null
+
+          - name: total_amount
+            description: Total order amount in order currency
+            data_tests:
+              - not_null
+              - dbt_expectations.expect_column_values_to_be_between:
+                  min_value: 0
+                  max_value: 100000
+
+          - name: currency
+            description: Order currency code (ISO 4217)
+            data_tests:
+              - not_null
+              - accepted_values:
+                  values: ['USD', 'EUR', 'GBP', 'CAD', 'AUD']
+
+          - name: is_valid
+            description: Data quality validation flag
+            data_tests:
+              - not_null
+
+      - name: raw_customers
+        description: Raw customer data from CRM system
+        columns:
+          - name: id
+            description: Unique system-generated identifier
+            data_tests:
+              - unique
+              - not_null
+
+          - name: customer_id
+            description: Business customer identifier
+            data_tests:
+              - unique
+              - not_null
+
+          - name: email
+            description: Customer email address
+            data_tests:
+              - not_null
+              - dbt_expectations.expect_column_values_to_match_regex:
+                  regex: '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
+
+          - name: registration_date
+            description: Date when customer registered
+            data_tests:
+              - not_null
+
+          - name: is_valid
+            description: Data quality validation flag
+            data_tests:
+              - not_null
+
+      - name: raw_shipments
+        description: Raw shipment data from logistics system
+        columns:
+          - name: id
+            description: Unique system-generated identifier
+            data_tests:
+              - unique
+              - not_null
+
+          - name: shipment_id
+            description: Business shipment identifier
+            data_tests:
+              - unique
+              - not_null
+
+          - name: order_id
+            description: Associated order identifier
+            data_tests:
+              - not_null
+              - relationships:
+                  to: source('raw', 'raw_orders')
+                  field: order_id
+
+          - name: is_valid
+            description: Data quality validation flag
+            data_tests:
+              - not_null

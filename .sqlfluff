@@ -1,0 +1,75 @@
+[sqlfluff]
+# dbt Labs style guide configuration
+templater = dbt
+dialect = postgres
+large_file_skip_char_limit = 40000
+large_file_skip_byte_limit = 80000
+
+[sqlfluff:indentation]
+# Indents should be four spaces
+tab_space_size = 4
+indent_unit = space
+
+[sqlfluff:layout:type:comma]
+# Use trailing commas
+spacing_before = touch
+line_position = trailing
+
+[sqlfluff:rules:capitalisation.keywords]
+# Field names, keywords, and function names should all be lowercase
+capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.identifiers]
+# Field names should be lowercase
+capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.functions]
+# Function names should be lowercase
+capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.literals]
+capitalisation_policy = lower
+
+[sqlfluff:rules:aliasing.table]
+# The as keyword should be used explicitly when aliasing
+aliasing = explicit
+
+[sqlfluff:rules:aliasing.column]
+# The as keyword should be used explicitly when aliasing
+aliasing = explicit
+
+[sqlfluff:rules:aliasing.expression]
+# The as keyword should be used explicitly when aliasing
+aliasing = explicit
+
+[sqlfluff:rules:layout.long_lines]
+# Lines of SQL should be no longer than 80 characters
+ignore_comment_lines = false
+ignore_comment_clauses = false
+
+[sqlfluff:rules:ambiguous.join]
+# Be explicit about your join type
+fully_qualify_join_types = both
+
+[sqlfluff:rules:references.from]
+# Avoid table aliases in join conditions
+force_enable = false
+
+[sqlfluff:rules:structure.subquery]
+forbid_subquery_in = both
+
+[sqlfluff:rules:convention.select_trailing_comma]
+select_clause_trailing_comma = forbid
+
+[sqlfluff:templater:dbt]
+project_dir = ./
+profiles_dir = ~/.dbt
+profile = ecommerce
+target = dev
+
+[sqlfluff:rules:jinja.padding]
+# Jinja comments should use {# #}
+single_space = true
+
+[sqlfluff:rules:layout.select_targets]
+wildcard_policy = single

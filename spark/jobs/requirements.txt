@@ -1,0 +1,27 @@
+# PySpark Jobs Requirements
+# Dependencies for incremental file ingestion and processing
+
+# PySpark core
+pyspark==3.4.1
+
+# Database connectivity
+psycopg2-binary==2.9.7
+
+# Configuration and environment
+python-dotenv==1.0.0
+
+# Date and time handling
+python-dateutil==2.8.2
+
+# Logging and monitoring
+structlog==23.2.0
+
+# File handling and hashing
+pathlib2==2.3.7
+
+# Type hints
+typing-extensions==4.8.0
+
+# Testing (optional)
+pytest==7.4.3
+pytest-spark==0.6.0

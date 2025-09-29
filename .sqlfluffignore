@@ -1,0 +1,24 @@
+# SQLFluff ignore file for dbt project
+# Ignore target directory - contains compiled SQL
+target/
+
+# Ignore dbt packages
+dbt_packages/
+
+# Ignore logs
+logs/
+
+# Ignore macros (if needed)
+# macros/
+
+# Ignore seeds (CSV files)
+seeds/*.csv
+
+# Ignore documentation files
+*.md
+
+# Ignore analysis files that aren't production models
+analyses/
+
+# Ignore snapshots if using different style
+# snapshots/

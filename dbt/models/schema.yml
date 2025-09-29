@@ -1,0 +1,282 @@
+version: 2
+
+models:
+  # ========================================
+  # RAW LAYER SOURCES
+  # ========================================
+  - name: raw_orders
+    description: >
+      Raw order data ingested from e-commerce platform.
+      Contains unprocessed order information with metadata fields.
+    
+  - name: raw_customers  
+    description: >
+      Raw customer data ingested from CRM system.
+      Contains customer profile and registration information.
+    
+  - name: raw_shipments
+    description: >
+      Raw shipment data ingested from logistics system.
+      Contains shipping and delivery tracking information.
+
+  # ========================================
+  # STAGING LAYER
+  # ========================================
+  - name: stg_raw_orders
+    description: >
+      Standardized and cleaned order data from raw source.
+      Applies consistent data types, handles null values, 
+      and adds derived business logic fields.
+    meta:
+      owner: data_team
+      maturity: high
+    tags: 
+      - staging
+      - orders
+      - daily
+
+  - name: stg_raw_customers
+    description: >
+      Standardized and cleaned customer data from raw source.
+      Includes data quality validation and derived customer attributes.
+    meta:
+      owner: data_team
+      maturity: high
+    tags:
+      - staging
+      - customers
+      - daily
+
+  - name: stg_raw_shipments
+    description: >
+      Standardized shipment data with delivery metrics and performance.
+      Enriched with delivery timing and performance indicators.
+    meta:
+      owner: data_team
+      maturity: high
+    tags:
+      - staging
+      - shipments
+      - daily
+
+  # ========================================
+  # INTERMEDIATE LAYER
+  # ========================================
+  - name: int_customer_order_metrics
+    description: >
+      Customer-level order metrics and behavioral analysis.
+      Aggregates order data to create customer insights and segmentation.
+    meta:
+      owner: analytics_team
+      maturity: high
+    tags:
+      - intermediate
+      - customers
+      - metrics
+      - daily
+
+  - name: int_order_shipment_combined
+    description: >
+      Combined order and shipment data for complete fulfillment view.
+      Links orders with their associated shipments and delivery performance.
+    meta:
+      owner: operations_team
+      maturity: high
+    tags:
+      - intermediate
+      - orders
+      - shipments
+      - daily
+
+  # ========================================
+  # MARTS LAYER - CORE
+  # ========================================
+  - name: dim_customers
+    description: >
+      Core customer dimension table combining customer attributes 
+      with calculated metrics and segmentation for analytics.
+      Updated nightly with latest customer behavior patterns.
+    meta:
+      owner: analytics_team
+      maturity: production
+    tags:
+      - core
+      - dimension
+      - customers
+      - nightly
+
+  - name: fact_orders
+    description: >
+      Core orders fact table combining order, customer, and shipment data
+      for comprehensive order analytics. Grain: one row per order.
+    meta:
+      owner: analytics_team
+      maturity: production
+    tags:
+      - core
+      - fact
+      - orders
+      - nightly
+
+  # ========================================
+  # MARTS LAYER - FINANCE
+  # ========================================
+  - name: revenue_daily
+    description: >
+      Daily revenue aggregations for financial reporting and analysis.
+      Includes revenue by status, returns, and key business metrics.
+    meta:
+      owner: finance_team
+      maturity: production
+    tags:
+      - finance
+      - revenue
+      - daily
+      - reporting
+
+  # ========================================
+  # MARTS LAYER - MARKETING
+  # ========================================
+  - name: customer_segmentation
+    description: >
+      Customer segmentation analysis for marketing campaigns and targeting.
+      Provides detailed customer segments with actionable marketing insights.
+    meta:
+      owner: marketing_team
+      maturity: production
+    tags:
+      - marketing
+      - segmentation
+      - customers
+      - weekly
+
+# ========================================
+# EXPOSURES
+# ========================================
+exposures:
+  - name: finance_dashboard
+    type: dashboard
+    maturity: high
+    url: https://company.looker.com/dashboards/finance
+    description: >
+      Executive finance dashboard showing daily revenue, 
+      trends, and key financial metrics.
+    depends_on:
+      - ref('revenue_daily')
+      - ref('fact_orders')
+    owner:
+      name: Finance Team
+      email: finance@company.com
+
+  - name: marketing_analytics
+    type: dashboard  
+    maturity: high
+    url: https://company.looker.com/dashboards/marketing
+    description: >
+      Marketing analytics dashboard for customer segmentation,
+      campaign performance, and customer lifetime value analysis.
+    depends_on:
+      - ref('customer_segmentation')
+      - ref('dim_customers')
+    owner:
+      name: Marketing Team
+      email: marketing@company.com
+
+  - name: operations_monitoring
+    type: dashboard
+    maturity: medium
+    url: https://company.looker.com/dashboards/operations  
+    description: >
+      Operations dashboard monitoring order fulfillment,
+      shipping performance, and delivery metrics.
+    depends_on:
+      - ref('fact_orders')
+      - ref('int_order_shipment_combined')
+    owner:
+      name: Operations Team
+      email: ops@company.com
+
+# ========================================
+# METRICS
+# ========================================
+metrics:
+  - name: daily_revenue
+    label: Daily Revenue
+    model: ref('revenue_daily')
+    description: Total daily revenue from fulfilled orders
+    calculation_method: sum
+    expression: net_revenue
+    timestamp: date_day
+    time_grains: 
+      - day
+      - week
+      - month
+      - quarter
+    dimensions:
+      - order_quarter
+      - order_month
+      - day_of_week
+    meta:
+      owner: finance_team
+
+  - name: average_order_value
+    label: Average Order Value
+    model: ref('fact_orders')
+    description: Average value per order
+    calculation_method: average
+    expression: total_amount
+    timestamp: order_date
+    time_grains:
+      - day
+      - week
+      - month
+    filters:
+      - field: order_status_group
+        operator: '='
+        value: "'fulfilled'"
+    meta:
+      owner: finance_team
+
+  - name: customer_acquisition_cost
+    label: Customer Acquisition Cost
+    model: ref('dim_customers')
+    description: Cost to acquire new customers
+    calculation_method: derived
+    expression: marketing_spend / new_customers
+    timestamp: registration_date
+    time_grains:
+      - month
+      - quarter
+    meta:
+      owner: marketing_team
+
+  - name: customer_lifetime_value
+    label: Customer Lifetime Value  
+    model: ref('customer_segmentation')
+    description: Predicted customer lifetime value
+    calculation_method: average
+    expression: predicted_lifetime_value
+    timestamp: last_updated_at
+    time_grains:
+      - month
+      - quarter
+    dimensions:
+      - customer_segment
+      - customer_value_segment
+    meta:
+      owner: marketing_team
+
+  - name: order_fulfillment_rate
+    label: Order Fulfillment Rate
+    model: ref('revenue_daily')
+    description: Percentage of orders successfully fulfilled
+    calculation_method: ratio
+    numerator: fulfilled_orders
+    denominator: total_orders
+    timestamp: date_day
+    time_grains:
+      - day
+      - week
+      - month
+    meta:
+      owner: operations_team
