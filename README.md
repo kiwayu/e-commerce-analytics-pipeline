@@ -1,5 +1,7 @@
 # E-commerce Analytics ETL Pipeline
 
+#WORK IN PROGRESS
+
 A production-grade ETL pipeline for e-commerce analytics using Apache Airflow, dbt, PySpark, and Great Expectations.
 
 ## 🏗️ Architecture Overview
