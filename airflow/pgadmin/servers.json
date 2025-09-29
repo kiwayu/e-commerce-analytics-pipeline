@@ -1,0 +1,26 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "Airflow Metadata DB",
+      "Group": "E-commerce ETL",
+      "Host": "postgres-airflow",
+      "Port": 5432,
+      "MaintenanceDB": "airflow",
+      "Username": "airflow",
+      "PassFile": "/var/lib/pgadmin/passfile",
+      "SSLMode": "prefer",
+      "Comment": "Airflow metadata database"
+    },
+    "2": {
+      "Name": "Data Warehouse",
+      "Group": "E-commerce ETL",
+      "Host": "postgres-warehouse",
+      "Port": 5432,
+      "MaintenanceDB": "ecommerce",
+      "Username": "ecommerce_user",
+      "PassFile": "/var/lib/pgadmin/passfile",
+      "SSLMode": "prefer",
+      "Comment": "E-commerce data warehouse"
+    }
+  }
+}

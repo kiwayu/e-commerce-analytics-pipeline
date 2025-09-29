@@ -1,0 +1,163 @@
+# E-commerce ETL Pipeline - Production Requirements
+# Last updated: 2025-09-29
+# Python 3.9+ recommended
+
+# =============================================================================
+# CORE ETL FRAMEWORK
+# =============================================================================
+# Apache Airflow with core dependencies
+apache-airflow==2.7.3
+apache-airflow-providers-postgres==5.7.1
+apache-airflow-providers-amazon==8.13.0
+apache-airflow-providers-docker==3.8.0
+apache-airflow-providers-spark==4.3.0
+
+# dbt for data transformations
+dbt-core==1.6.6
+dbt-postgres==1.6.6
+dbt-bigquery==1.6.6
+
+# PySpark for big data processing
+pyspark==3.4.1
+py4j==0.10.9.7
+
+# =============================================================================
+# DATA QUALITY & VALIDATION
+# =============================================================================
+# Great Expectations for data validation
+great-expectations==0.17.23
+great-expectations-experimental==0.16.15
+
+# =============================================================================
+# DATABASE & CLOUD CONNECTIVITY
+# =============================================================================
+# PostgreSQL adapter
+psycopg2-binary==2.9.7
+
+# AWS SDK
+boto3==1.28.85
+botocore==1.31.85
+
+# Additional database connectors
+SQLAlchemy==1.4.53
+sqlalchemy-bigquery==1.8.0
+
+# =============================================================================
+# DATA PROCESSING & ANALYSIS
+# =============================================================================
+# Core data libraries
+pandas==2.0.3
+numpy==1.24.4
+pyarrow==13.0.0
+
+# Data validation and schema
+pandera==0.17.2
+marshmallow==3.20.1
+
+# =============================================================================
+# TESTING FRAMEWORK
+# =============================================================================
+# Primary testing framework
+pytest==7.4.3
+pytest-cov==4.1.0
+pytest-mock==3.12.0
+pytest-xdist==3.3.1
+
+# Airflow testing utilities
+pytest-airflow==0.0.7
+
+# Data testing
+dbt-test-utils==1.0.0
+
+# =============================================================================
+# CONFIGURATION & ENVIRONMENT
+# =============================================================================
+# Environment and configuration management
+python-dotenv==1.0.0
+pydantic==2.4.2
+click==8.1.7
+
+# Secrets management
+cryptography==41.0.7
+
+# =============================================================================
+# MONITORING & LOGGING
+# =============================================================================
+# Enhanced logging and monitoring
+structlog==23.2.0
+colorlog==6.7.0
+
+# Metrics and monitoring
+prometheus-client==0.17.1
+statsd==4.0.1
+
+# =============================================================================
+# UTILITIES & HELPERS
+# =============================================================================
+# Date/time handling
+pendulum==2.1.2
+python-dateutil==2.8.2
+
+# HTTP requests and APIs
+requests==2.31.0
+urllib3==1.26.18
+
+# File and data format handling
+openpyxl==3.1.2
+xlrd==2.0.1
+
+# Development utilities
+python-slugify==8.0.1
+jinja2==3.1.2
+
+# =============================================================================
+# DEVELOPMENT & CODE QUALITY
+# =============================================================================
+# Code formatting and linting
+black==23.9.1
+flake8==6.1.0
+isort==5.12.0
+pre-commit==3.5.0
+
+# Type checking
+mypy==1.6.1
+types-requests==2.31.0.10
+types-python-dateutil==2.8.19.14
+
+# =============================================================================
+# OPTIONAL: JUPYTER & EXPLORATION
+# =============================================================================
+# Jupyter for data exploration (optional)
+jupyter==1.0.0
+jupyterlab==4.0.7
+notebook==7.0.6
+
+# Visualization
+matplotlib==3.7.2
+seaborn==0.12.2
+plotly==5.17.0
+
+# =============================================================================
+# SECURITY
+# =============================================================================
+# Security scanning
+safety==2.3.5
+bandit==1.7.5
+
+# =============================================================================
+# CONTAINER & DEPLOYMENT
+# =============================================================================
+# Docker utilities
+docker==6.1.3
+
+# Kubernetes client (if using K8s)
+kubernetes==28.1.0
+
+# =============================================================================
+# VERSION COMPATIBILITY NOTES
+# =============================================================================
+# - Python 3.9+ recommended for optimal compatibility
+# - Airflow 2.7.3 includes security patches and stability improvements
+# - PySpark 3.4.1 compatible with Hadoop 3.3 and later
+# - Great Expectations 0.17.x for latest features and stability
+# - All versions tested for compatibility as of 2025-09-29
