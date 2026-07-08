@@ -39,6 +39,9 @@ x-airflow-common:
     
     # Connection strings for easy access
     AIRFLOW_CONN_POSTGRES_DWH: postgresql://${DWH_POSTGRES_USER:-ecommerce_user}:${DWH_POSTGRES_PASSWORD:-ecommerce123}@${DWH_POSTGRES_HOST:-postgres-warehouse}:${DWH_POSTGRES_PORT:-5432}/${DWH_POSTGRES_DB:-ecommerce}
+    # Source system connection; points at the warehouse in local development
+    # so the replication path can be exercised without a second database.
+    AIRFLOW_CONN_POSTGRES_SOURCE: ${AIRFLOW_CONN_POSTGRES_SOURCE:-postgresql://${DWH_POSTGRES_USER:-ecommerce_user}:${DWH_POSTGRES_PASSWORD:-ecommerce123}@${DWH_POSTGRES_HOST:-postgres-warehouse}:${DWH_POSTGRES_PORT:-5432}/${DWH_POSTGRES_DB:-ecommerce}}
     AIRFLOW_CONN_REDIS_DEFAULT: redis://:${REDIS_PASSWORD:-}@redis:6379/0
     
     # AWS credentials for S3 data lake
@@ -58,6 +61,10 @@ x-airflow-common:
     DBT_PROFILES_DIR: /opt/airflow/dbt
     DBT_PROJECT_DIR: /opt/airflow/dbt
     DBT_TARGET: ${DBT_TARGET:-dev}
+    # Write dbt logs/artifacts inside the container: the mounted project dir
+    # may not be writable by the airflow user
+    DBT_LOG_PATH: /tmp/dbt/logs
+    DBT_TARGET_PATH: /tmp/dbt/target
     
     # Great Expectations configuration
     GE_HOME: /opt/airflow/great_expectations

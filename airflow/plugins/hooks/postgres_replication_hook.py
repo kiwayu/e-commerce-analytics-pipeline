@@ -2,9 +2,10 @@
 PostgreSQL replication hook for incremental data transfer with high-water mark strategy.
 """
 
+import json
 import logging
 from typing import Dict, List, Optional, Any, Tuple
-from datetime import datetime, timezone
+from datetime import datetime, date, timezone
 import pandas as pd
 from contextlib import contextmanager
 
@@ -323,15 +324,24 @@ class PostgreSQLReplicationHook(PostgresHook):
                     values = []
                     for col in columns:
                         value = row[col]
-                        if pd.isna(value):
+                        # dict/list (jsonb) checked before pd.isna, which is
+                        # elementwise (ambiguous) for list values
+                        if isinstance(value, (dict, list)):
+                            escaped_json = json.dumps(value).replace("'", "''")
+                            values.append(f"'{escaped_json}'")
+                        elif pd.isna(value):
                             values.append("NULL")
-                        elif isinstance(value, str):
-                            escaped_value = value.replace("'", "''")
-                            values.append(f"'{escaped_value}'")
-                        elif isinstance(value, datetime):
+                        elif isinstance(value, bool):
+                            values.append("TRUE" if value else "FALSE")
+                        elif isinstance(value, (int, float)):
+                            values.append(str(value))
+                        elif isinstance(value, (datetime, date)):
                             values.append(f"'{value.isoformat()}'")
                         else:
-                            values.append(str(value))
+                            # str, Decimal, UUID and anything else: quote and
+                            # escape the text representation
+                            escaped_value = str(value).replace("'", "''")
+                            values.append(f"'{escaped_value}'")
                     values_list.append(f"({', '.join(values)})")
                 
                 values_clause = ",\n".join(values_list)

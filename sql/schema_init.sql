@@ -336,6 +336,21 @@ CREATE TABLE IF NOT EXISTS staging.customers (
     source_system VARCHAR(50),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+
+    -- Columns carried over from the raw layer so SELECT * replication from
+    -- raw.raw_customers lands without column mapping
+    id UUID,
+    preferred_language VARCHAR(10),
+    addresses JSONB,
+    timezone VARCHAR(50),
+    preferences JSONB,
+    tags JSONB,
+    source_file VARCHAR(255),
+    ingestion_timestamp TIMESTAMP WITH TIME ZONE,
+    batch_id VARCHAR(100),
+    record_hash VARCHAR(64),
+    is_valid BOOLEAN,
+    validation_errors JSONB,
     PRIMARY KEY (customer_id, source_system),
     
     CONSTRAINT chk_staging_customers_email_valid CHECK (

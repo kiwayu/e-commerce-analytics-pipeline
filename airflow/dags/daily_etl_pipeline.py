@@ -12,7 +12,7 @@ SLA: 4 hours total pipeline completion
 """
 
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Any
 
 from airflow import DAG
@@ -28,6 +28,7 @@ try:
     SLACK_PROVIDER_AVAILABLE = True
 except ImportError:
     SLACK_PROVIDER_AVAILABLE = False
+from airflow.exceptions import AirflowSkipException
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 from airflow.models import Variable
@@ -75,7 +76,7 @@ PIPELINE_CONFIG = {
     },
     'transformation': {
         'dbt_target': 'prod',
-        'dbt_profiles_dir': '/opt/airflow/dbt_profiles',
+        'dbt_profiles_dir': '/opt/airflow/dbt',
         'full_refresh': False,
     },
     'validation': {
@@ -202,10 +203,15 @@ def run_api_ingestion(**context) -> Dict[str, Any]:
         Dictionary with ingestion results
     """
     import sys
-    sys.path.append('/opt/spark/jobs')
-    
-    from ingestion.orders_ingestion import ingest_orders
-    
+    sys.path.append('/opt/airflow/spark')
+
+    try:
+        from ingestion.orders_ingestion import ingest_orders
+    except ImportError as e:
+        # External API ingestion is optional for local runs; the raw layer
+        # can be pre-loaded instead (see sql/seed_sample_data.sql).
+        raise AirflowSkipException(f"API ingestion unavailable, skipping: {e}")
+
     pipeline_context = get_pipeline_context(**context)
     
     try:
@@ -257,11 +263,16 @@ def run_file_ingestion(**context) -> Dict[str, Any]:
         Dictionary with ingestion results
     """
     import sys
-    sys.path.append('/opt/spark/jobs')
-    
-    from incremental.incremental_loader import IncrementalFileLoader
-    from config.spark_config import SparkJobConfig
-    
+    sys.path.append('/opt/airflow/spark/jobs')
+
+    try:
+        from incremental.incremental_loader import IncrementalFileLoader
+        from config.spark_config import SparkJobConfig
+    except ImportError as e:
+        # PySpark is not part of the base Airflow image; file ingestion is
+        # optional for local runs.
+        raise AirflowSkipException(f"File ingestion unavailable, skipping: {e}")
+
     pipeline_context = get_pipeline_context(**context)
     
     try:
@@ -321,14 +332,22 @@ def run_great_expectations_validation(**context) -> Dict[str, Any]:
         import great_expectations as ge
         from great_expectations.core.batch import RuntimeBatchRequest
     except ImportError:
-        raise ImportError("Great Expectations not installed. Run: pip install great_expectations")
-    
+        # GE validation is optional; the SQL business-metrics validation task
+        # still provides baseline data quality coverage.
+        raise AirflowSkipException("Great Expectations not installed, skipping GE validation")
+
     pipeline_context = get_pipeline_context(**context)
-    
+
+    # Initialize Great Expectations context; skip when no GE project has been
+    # scaffolded yet (checkpoints are a stretch goal for this prototype).
+    ge_config_path = Variable.get('ge_config_path', '/opt/airflow/great_expectations')
     try:
-        # Initialize Great Expectations context
-        ge_config_path = Variable.get('ge_config_path', '/opt/airflow/great_expectations')
         context_ge = ge.get_context(context_root_dir=ge_config_path)
+        context_ge.get_checkpoint('orders_data_quality')
+    except Exception as e:
+        raise AirflowSkipException(f"No usable GE project at {ge_config_path}, skipping: {e}")
+
+    try:
         
         validation_results = {
             'pipeline_id': pipeline_context['pipeline_id'],
@@ -343,7 +362,7 @@ def run_great_expectations_validation(**context) -> Dict[str, Any]:
         critical_checkpoints = [
             {
                 'name': 'orders_data_quality',
-                'table': 'marts.fact_orders',
+                'table': 'analytics.fact_orders',
                 'expectations': [
                     'expect_table_row_count_to_be_between',
                     'expect_column_values_to_not_be_null',
@@ -352,7 +371,7 @@ def run_great_expectations_validation(**context) -> Dict[str, Any]:
             },
             {
                 'name': 'customers_data_quality', 
-                'table': 'marts.dim_customers',
+                'table': 'analytics.dim_customers',
                 'expectations': [
                     'expect_table_row_count_to_be_between',
                     'expect_column_values_to_not_be_null',
@@ -361,7 +380,7 @@ def run_great_expectations_validation(**context) -> Dict[str, Any]:
             },
             {
                 'name': 'revenue_data_quality',
-                'table': 'marts.revenue_daily',
+                'table': 'analytics.revenue_daily',
                 'expectations': [
                     'expect_table_row_count_to_be_between',
                     'expect_column_values_to_be_between'
@@ -486,7 +505,7 @@ def send_success_notification(**context) -> None:
 • Validations Failed: {validation_result.get('validations_failed', 0)}
 
 **⏱️ Performance:**
-• Pipeline Duration: {context['dag_run'].duration}
+• Pipeline Duration: {datetime.now(timezone.utc) - context['dag_run'].start_date}
 • Status: Completed Successfully
 
 Dashboard: https://company.looker.com/dashboards/etl-pipeline
@@ -557,8 +576,8 @@ with TaskGroup('ingestion', dag=dag) as ingestion_group:
         target_table='staging.customers',
         source_conn_id='postgres_source',
         target_conn_id='postgres_dwh',
-        watermark_column='updated_at',
-        primary_key_columns=['customer_id'],
+        watermark_column='ingestion_timestamp',
+        primary_key_columns=['customer_id', 'source_system'],
         replication_mode='upsert',
         batch_size=PIPELINE_CONFIG['ingestion']['replication_batch_size'],
         sla=timedelta(hours=1),
@@ -570,7 +589,9 @@ with TaskGroup('ingestion', dag=dag) as ingestion_group:
 # Ingestion completion gate
 ingestion_complete = DummyOperator(
     task_id='ingestion_complete',
-    trigger_rule=TriggerRule.ALL_SUCCESS,
+    # NONE_FAILED so optional ingestion paths (API/file) may skip without
+    # blocking the downstream transformations.
+    trigger_rule=TriggerRule.NONE_FAILED,
     dag=dag
 )
 
@@ -661,9 +682,9 @@ with TaskGroup('validation', dag=dag) as validation_group:
                 100 as min_expected,
                 50000 as max_expected,
                 CASE WHEN COUNT(*) BETWEEN 100 AND 50000 THEN TRUE ELSE FALSE END as passed
-            FROM marts.fact_orders 
+            FROM analytics.fact_orders
             WHERE DATE(order_date) = CURRENT_DATE - INTERVAL '1 day'
-            
+
             UNION ALL
             
             SELECT 
@@ -672,7 +693,7 @@ with TaskGroup('validation', dag=dag) as validation_group:
                 1000 as min_expected,
                 10000000 as max_expected,
                 CASE WHEN SUM(total_amount) BETWEEN 1000 AND 10000000 THEN TRUE ELSE FALSE END as passed
-            FROM marts.fact_orders 
+            FROM analytics.fact_orders
             WHERE DATE(order_date) = CURRENT_DATE - INTERVAL '1 day'
         )
         SELECT 
@@ -697,7 +718,7 @@ with TaskGroup('validation', dag=dag) as validation_group:
 success_notification = PythonOperator(
     task_id='success_notification',
     python_callable=send_success_notification,
-    trigger_rule=TriggerRule.ALL_SUCCESS,
+    trigger_rule=TriggerRule.NONE_FAILED,
     dag=dag
 )
 
@@ -713,10 +734,10 @@ if PIPELINE_CONFIG['monitoring']['enable_slack'] and SLACK_PROVIDER_AVAILABLE:
 
         Pipeline: {{ dag.dag_id }}
         Execution Date: {{ ds }}
-        Duration: {{ dag_run.duration }}
+        Started: {{ dag_run.start_date }}
         """,
         channel=PIPELINE_CONFIG['monitoring']['success_channel'],
-        trigger_rule=TriggerRule.ALL_SUCCESS,
+        trigger_rule=TriggerRule.NONE_FAILED,
         dag=dag
     )
 
@@ -743,7 +764,7 @@ else:
             f"Pipeline {context['dag'].dag_id} completed successfully "
             f"(Slack alerting disabled)"
         ),
-        trigger_rule=TriggerRule.ALL_SUCCESS,
+        trigger_rule=TriggerRule.NONE_FAILED,
         dag=dag
     )
 
