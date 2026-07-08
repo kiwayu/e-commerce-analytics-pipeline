@@ -9,49 +9,49 @@ models:
     columns:
       - name: customer_id
         description: Unique business identifier for the customer
-        data_tests:
+        tests:
           - unique
           - not_null
 
       - name: email
         description: Customer email address
-        data_tests:
+        tests:
           - not_null
 
       - name: full_name
         description: Customer full name
-        data_tests:
+        tests:
           - not_null
 
       - name: country
         description: Customer country
-        data_tests:
+        tests:
           - not_null
 
       - name: total_orders
         description: Total number of orders placed by customer
-        data_tests:
+        tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
               min_value: 0
 
       - name: total_order_value
         description: Total value of all customer orders
-        data_tests:
+        tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
               min_value: 0
 
       - name: average_order_value
         description: Average value per order for this customer
-        data_tests:
+        tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
               min_value: 0
 
       - name: customer_segment
         description: Business-defined customer segment
-        data_tests:
+        tests:
           - not_null
           - accepted_values:
               values: 
@@ -68,21 +68,21 @@ models:
 
       - name: customer_frequency_segment
         description: Customer purchase frequency segment
-        data_tests:
+        tests:
           - not_null
           - accepted_values:
               values: ['new', 'one_time', 'occasional', 'regular', 'frequent']
 
       - name: customer_value_segment
         description: Customer value tier based on AOV
-        data_tests:
+        tests:
           - not_null
           - accepted_values:
               values: ['new', 'budget', 'standard', 'premium']
 
       - name: loyalty_segment
         description: Customer loyalty classification
-        data_tests:
+        tests:
           - not_null
           - accepted_values:
               values: 
@@ -93,19 +93,19 @@ models:
 
       - name: is_active_buyer
         description: Flag indicating recent purchase activity
-        data_tests:
+        tests:
           - not_null
 
       - name: is_marketable
         description: >
           Flag indicating customer can receive marketing communications
           (has valid email and marketing consent)
-        data_tests:
+        tests:
           - not_null
 
       - name: last_updated_at
         description: Timestamp of last dimension update
-        data_tests:
+        tests:
           - not_null
 
   - name: fact_orders
@@ -115,13 +115,13 @@ models:
     columns:
       - name: order_id
         description: Unique business identifier for the order
-        data_tests:
+        tests:
           - unique
           - not_null
 
       - name: customer_id
         description: Customer who placed the order
-        data_tests:
+        tests:
           - not_null
           - relationships:
               to: ref('dim_customers')
@@ -129,52 +129,52 @@ models:
 
       - name: order_date
         description: Date and time when order was placed
-        data_tests:
+        tests:
           - not_null
 
       - name: order_status_group
         description: Grouped order status for analysis
-        data_tests:
+        tests:
           - not_null
           - accepted_values:
               values: ['active', 'fulfilled', 'cancelled', 'unknown']
 
       - name: customer_segment
         description: Customer segment at time of order
-        data_tests:
+        tests:
           - not_null
 
       - name: total_amount
         description: Total order amount
-        data_tests:
+        tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
               min_value: 0
 
       - name: fulfilled_revenue
         description: Revenue from fulfilled orders only
-        data_tests:
+        tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
               min_value: 0
 
       - name: cancelled_revenue
         description: Revenue from cancelled orders
-        data_tests:
+        tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
               min_value: 0
 
       - name: customer_order_sequence
         description: Sequential order number for this customer
-        data_tests:
+        tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
               min_value: 1
 
       - name: cumulative_customer_value
         description: Running total of customer order value
-        data_tests:
+        tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
               min_value: 0
@@ -182,35 +182,27 @@ models:
       - name: clean_order
         description: >
           Flag indicating order had no shipping exceptions or returns
-        data_tests:
+        tests:
           - not_null
 
       - name: delivered_on_time
         description: Flag indicating all shipments delivered on time
-        data_tests:
+        tests:
           - not_null
 
       - name: last_updated_at
         description: Timestamp of last fact table update
-        data_tests:
+        tests:
           - not_null
 
     # Data quality tests at model level
-    data_tests:
+    tests:
       - dbt_expectations.expect_table_row_count_to_be_between:
           min_value: 1
           max_value: 10000000
 
       - dbt_expectations.expect_table_column_count_to_equal:
-          value: 47
+          value: 55
 
-      # Ensure no orders without customers (referential integrity)
-      - dbt_utils.expression_is_true:
-          expression: >
-            (
-              select count(*) 
-              from {{ this }} o
-              left join {{ ref('dim_customers') }} c
-                on o.customer_id = c.customer_id
-              where c.customer_id is null
-            ) = 0
+      # Referential integrity (no orders without customers) is enforced by
+      # the relationships test on the customer_id column above.

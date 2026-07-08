@@ -24,7 +24,7 @@ customers_source as (
         addresses,
         country,
         registration_date,
-        last_login_date,
+        last_login as last_login_date,
         marketing_consent,
         source_system,
         source_file,
@@ -34,7 +34,7 @@ customers_source as (
         is_valid,
         validation_errors
 
-    from {{ ref('raw_customers') }}
+    from {{ source('raw', 'raw_customers') }}
 
     where is_valid = true
 

@@ -83,11 +83,6 @@ seeds:
 tests:
   +severity: error
 
-# Configure documentation
-docs:
-  ecommerce_analytics:
-    +node_color: "purple"
-
 # Macros configuration
 dispatch:
   - macro_namespace: dbt_utils
@@ -123,6 +118,13 @@ vars:
 on-run-start:
   - "{{ log('Starting dbt run for ecommerce analytics', info=True) }}"
   - create schema if not exists {{ target.schema }}_logs
+  - >
+    create table if not exists {{ target.schema }}_logs.dbt_run_log (
+      run_id text,
+      start_time timestamptz,
+      end_time timestamptz,
+      status text
+    )
 
 on-run-end:
   - "{{ log('Completed dbt run for ecommerce analytics', info=True) }}"
@@ -144,10 +146,3 @@ quoting:
 
 # Logging configuration
 require-dbt-version: ">=1.6.0"
-
-# Dependencies
-dependencies:
-  - package: dbt-labs/dbt_utils
-    version: 1.1.1
-  - package: calogica/dbt_expectations
-    version: 0.10.1

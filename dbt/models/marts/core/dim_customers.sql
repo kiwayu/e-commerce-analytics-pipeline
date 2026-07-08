@@ -5,7 +5,7 @@
             {'columns': ['customer_id'], 'unique': True},
             {'columns': ['email']},
             {'columns': ['customer_segment']},
-            {'columns': ['is_active']}
+            {'columns': ['is_active_buyer']}
         ],
         tags=['core', 'dimension', 'customers']
     )

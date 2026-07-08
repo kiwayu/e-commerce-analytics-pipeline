@@ -40,3 +40,4 @@ great_expectations/uncommitted/
 *.swp
 .DS_Store
 Thumbs.db
+dbt/.user.yml

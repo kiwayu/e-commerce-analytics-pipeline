@@ -38,7 +38,7 @@ orders_source as (
         is_valid,
         validation_errors
 
-    from {{ ref('raw_orders') }}
+    from {{ source('raw', 'raw_orders') }}
 
     where is_valid = true
 

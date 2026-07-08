@@ -9,23 +9,23 @@ models:
     columns:
       - name: order_id
         description: Unique business identifier for the order
-        data_tests:
+        tests:
           - unique
           - not_null
 
       - name: customer_id
         description: Customer who placed the order
-        data_tests:
+        tests:
           - not_null
 
       - name: order_date
         description: Timestamp when order was placed
-        data_tests:
+        tests:
           - not_null
 
       - name: order_status
         description: Current status of the order (standardized lowercase)
-        data_tests:
+        tests:
           - not_null
           - accepted_values:
               values: 
@@ -38,40 +38,40 @@ models:
 
       - name: order_status_group
         description: Grouped order status for analysis
-        data_tests:
+        tests:
           - not_null
           - accepted_values:
               values: ['active', 'fulfilled', 'cancelled', 'unknown']
 
       - name: order_value_tier
         description: Order value categorization
-        data_tests:
+        tests:
           - not_null
           - accepted_values:
               values: ['high_value', 'medium_value', 'low_value']
 
       - name: total_amount
         description: Total order amount
-        data_tests:
+        tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
               min_value: 0
 
       - name: currency
         description: Order currency (standardized uppercase)
-        data_tests:
+        tests:
           - not_null
 
       - name: net_amount
         description: Order amount minus discounts
-        data_tests:
+        tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
               min_value: 0
 
       - name: gross_amount
         description: Order amount plus taxes and shipping
-        data_tests:
+        tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
               min_value: 0
@@ -83,45 +83,45 @@ models:
     columns:
       - name: customer_id
         description: Unique business identifier for the customer
-        data_tests:
+        tests:
           - unique
           - not_null
 
       - name: email
         description: Customer email address (standardized lowercase)
-        data_tests:
+        tests:
           - not_null
 
       - name: full_name
         description: Customer full name (proper case)
-        data_tests:
+        tests:
           - not_null
 
       - name: country
         description: Customer country (standardized uppercase)
-        data_tests:
+        tests:
           - not_null
 
       - name: registration_date
         description: When customer registered
-        data_tests:
+        tests:
           - not_null
 
       - name: has_valid_email
         description: Flag indicating if email passes validation
-        data_tests:
+        tests:
           - not_null
 
       - name: customer_tenure
         description: Customer tenure category
-        data_tests:
+        tests:
           - not_null
           - accepted_values:
               values: ['new', 'active', 'established']
 
       - name: passes_quality_checks
         description: Overall data quality validation flag
-        data_tests:
+        tests:
           - not_null
 
   - name: stg_raw_shipments
@@ -131,23 +131,23 @@ models:
     columns:
       - name: shipment_id
         description: Unique business identifier for the shipment
-        data_tests:
+        tests:
           - unique
           - not_null
 
       - name: order_id
         description: Associated order identifier
-        data_tests:
+        tests:
           - not_null
 
       - name: shipment_status
         description: Current shipment status (standardized lowercase)
-        data_tests:
+        tests:
           - not_null
 
       - name: shipment_status_group
         description: Grouped shipment status for analysis
-        data_tests:
+        tests:
           - not_null
           - accepted_values:
               values: 
@@ -159,13 +159,13 @@ models:
 
       - name: delivered_on_time
         description: Flag indicating if shipment was delivered on time
-        data_tests:
+        tests:
           - accepted_values:
               values: [true, false]
 
       - name: delivery_performance
         description: Delivery performance category
-        data_tests:
+        tests:
           - accepted_values:
               values: 
                 - 'on_time'
@@ -175,7 +175,7 @@ models:
 
       - name: delivery_speed_category
         description: Delivery speed categorization
-        data_tests:
+        tests:
           - accepted_values:
               values: 
                 - 'same_day'

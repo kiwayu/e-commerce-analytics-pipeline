@@ -49,7 +49,7 @@ shipments_source as (
         is_valid,
         validation_errors
 
-    from {{ ref('raw_shipments') }}
+    from {{ source('raw', 'raw_shipments') }}
 
     where is_valid = true
 
@@ -92,16 +92,16 @@ cleaned_shipments as (
 
         {# Derived delivery metrics #}
         case
-            when actual_delivery_date is not null 
+            when actual_delivery_date is not null
                 and estimated_delivery_date is not null
-                then actual_delivery_date - estimated_delivery_date
+                then cast(actual_delivery_date as date) - cast(estimated_delivery_date as date)
             else null
         end as delivery_variance_days,
 
         case
-            when shipped_date is not null 
+            when shipped_date is not null
                 and actual_delivery_date is not null
-                then actual_delivery_date - cast(shipped_date as date)
+                then cast(actual_delivery_date as date) - cast(shipped_date as date)
             else null
         end as total_delivery_days,
 
