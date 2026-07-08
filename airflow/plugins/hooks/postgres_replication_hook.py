@@ -326,7 +326,8 @@ class PostgreSQLReplicationHook(PostgresHook):
                         if pd.isna(value):
                             values.append("NULL")
                         elif isinstance(value, str):
-                            values.append(f"'{value.replace(\"'\", \"''\")}'")
+                            escaped_value = value.replace("'", "''")
+                            values.append(f"'{escaped_value}'")
                         elif isinstance(value, datetime):
                             values.append(f"'{value.isoformat()}'")
                         else:

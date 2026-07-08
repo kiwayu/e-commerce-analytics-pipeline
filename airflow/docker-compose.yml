@@ -1,6 +1,5 @@
 # E-commerce ETL Pipeline - Airflow Docker Compose
 # Production-ready Airflow setup with PostgreSQL metadata DB, Redis, and separate data warehouse
-version: '3.8'
 
 x-airflow-common:
   &airflow-common
@@ -329,6 +328,7 @@ services:
         exec /entrypoint airflow version
     environment:
       <<: *airflow-common-env
+      HOME: /home/airflow
       _AIRFLOW_DB_UPGRADE: 'true'
       _AIRFLOW_WWW_USER_CREATE: 'true'
       _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-airflow}
@@ -406,43 +406,18 @@ services:
 volumes:
   # Airflow metadata database
   postgres-airflow-data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${PWD}/volumes/postgres-airflow-data
 
   # Data warehouse database
   postgres-warehouse-data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${PWD}/volumes/postgres-warehouse-data
 
   # Redis data
   redis-data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${PWD}/volumes/redis-data
 
   # Airflow shared data
   airflow-data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${PWD}/volumes/airflow-data
 
   # PgAdmin data
   pgadmin-data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${PWD}/volumes/pgadmin-data
 
 networks:
   airflow-network:

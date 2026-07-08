@@ -21,8 +21,13 @@ from airflow.operators.bash import BashOperator
 from airflow.operators.dummy import DummyOperator
 from airflow.operators.email import EmailOperator
 from airflow.sensors.filesystem import FileSensor
-from airflow.providers.slack.operators.slack_webhook import SlackWebhookOperator
 from airflow.providers.postgres.operators.postgres import PostgresOperator
+
+try:
+    from airflow.providers.slack.operators.slack_webhook import SlackWebhookOperator
+    SLACK_PROVIDER_AVAILABLE = True
+except ImportError:
+    SLACK_PROVIDER_AVAILABLE = False
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 from airflow.models import Variable
@@ -82,7 +87,8 @@ PIPELINE_CONFIG = {
         'slack_webhook_conn_id': 'slack_webhook',
         'success_channel': '#data-pipeline-success',
         'failure_channel': '#data-pipeline-alerts',
-        'enable_slack': True,
+        # Requires the Slack provider and a 'slack_webhook' Airflow connection
+        'enable_slack': os.environ.get('ENABLE_SLACK_ALERTS', 'false').lower() == 'true',
     }
 }
 
@@ -530,16 +536,18 @@ with TaskGroup('ingestion', dag=dag) as ingestion_group:
         python_callable=run_api_ingestion,
         sla=timedelta(hours=1),
         pool='ingestion_pool',
-        priority_weight=10
+        priority_weight=10,
+        dag=dag
     )
-    
-    # File Ingestion Task  
+
+    # File Ingestion Task
     file_ingestion = PythonOperator(
         task_id='file_ingestion',
         python_callable=run_file_ingestion,
         sla=timedelta(hours=1),
         pool='ingestion_pool',
-        priority_weight=10
+        priority_weight=10,
+        dag=dag
     )
     
     # Database Replication Task
@@ -555,7 +563,8 @@ with TaskGroup('ingestion', dag=dag) as ingestion_group:
         batch_size=PIPELINE_CONFIG['ingestion']['replication_batch_size'],
         sla=timedelta(hours=1),
         pool='ingestion_pool',
-        priority_weight=10
+        priority_weight=10,
+        dag=dag
     )
 
 # Ingestion completion gate
@@ -579,9 +588,10 @@ with TaskGroup('transformation', dag=dag) as transformation_group:
             --profiles-dir {PIPELINE_CONFIG['transformation']['dbt_profiles_dir']}
         """,
         sla=timedelta(minutes=30),
-        pool='transformation_pool'
+        pool='transformation_pool',
+        dag=dag
     )
-    
+
     # dbt intermediate layer
     dbt_intermediate = BashOperator(
         task_id='dbt_run_intermediate',
@@ -591,7 +601,8 @@ with TaskGroup('transformation', dag=dag) as transformation_group:
             --profiles-dir {PIPELINE_CONFIG['transformation']['dbt_profiles_dir']}
         """,
         sla=timedelta(minutes=45),
-        pool='transformation_pool'
+        pool='transformation_pool',
+        dag=dag
     )
     
     # dbt marts layer
@@ -603,7 +614,8 @@ with TaskGroup('transformation', dag=dag) as transformation_group:
             --profiles-dir {PIPELINE_CONFIG['transformation']['dbt_profiles_dir']}
         """,
         sla=timedelta(hours=1),
-        pool='transformation_pool'
+        pool='transformation_pool',
+        dag=dag
     )
     
     # dbt tests
@@ -615,7 +627,8 @@ with TaskGroup('transformation', dag=dag) as transformation_group:
             --profiles-dir {PIPELINE_CONFIG['transformation']['dbt_profiles_dir']}
         """,
         sla=timedelta(minutes=30),
-        pool='transformation_pool'
+        pool='transformation_pool',
+        dag=dag
     )
     
     # Set transformation dependencies
@@ -631,7 +644,8 @@ with TaskGroup('validation', dag=dag) as validation_group:
         task_id='data_quality_validation',
         python_callable=run_great_expectations_validation,
         sla=timedelta(minutes=30),
-        pool='validation_pool'
+        pool='validation_pool',
+        dag=dag
     )
     
     # Business metrics validation
@@ -671,7 +685,8 @@ with TaskGroup('validation', dag=dag) as validation_group:
         FROM validation_checks;
         """,
         sla=timedelta(minutes=15),
-        pool='validation_pool'
+        pool='validation_pool',
+        dag=dag
     )
 
 # =============================================================================
@@ -686,41 +701,61 @@ success_notification = PythonOperator(
     dag=dag
 )
 
-# Slack success alert
-slack_success_alert = SlackWebhookOperator(
-    task_id='slack_success_alert',
-    http_conn_id=PIPELINE_CONFIG['monitoring']['slack_webhook_conn_id'],
-    message="""
-    ✅ **ETL Pipeline Completed Successfully**
-    
-    Pipeline: {{ dag.dag_id }}
-    Execution Date: {{ ds }}
-    Duration: {{ dag_run.duration }}
-    
-    Check dashboard: https://company.looker.com/dashboards/etl-pipeline
-    """,
-    channel=PIPELINE_CONFIG['monitoring']['success_channel'],
-    trigger_rule=TriggerRule.ALL_SUCCESS,
-    dag=dag
-)
+# Slack alerts are optional: they require the Slack provider and a configured
+# webhook connection. Without them, fall back to log-only notification tasks
+# so the DAG still parses and runs in a bare local environment.
+if PIPELINE_CONFIG['monitoring']['enable_slack'] and SLACK_PROVIDER_AVAILABLE:
+    slack_success_alert = SlackWebhookOperator(
+        task_id='slack_success_alert',
+        slack_webhook_conn_id=PIPELINE_CONFIG['monitoring']['slack_webhook_conn_id'],
+        message="""
+        ✅ **ETL Pipeline Completed Successfully**
 
-# Failure notification
-failure_notification = SlackWebhookOperator(
-    task_id='failure_notification',
-    http_conn_id=PIPELINE_CONFIG['monitoring']['slack_webhook_conn_id'],
-    message="""
-    🚨 **ETL Pipeline Failed**
-    
-    Pipeline: {{ dag.dag_id }}
-    Execution Date: {{ ds }}
-    Failed Task: {{ ti.task_id }}
-    
-    Please check logs: {{ ti.log_url }}
-    """,
-    channel=PIPELINE_CONFIG['monitoring']['failure_channel'],
-    trigger_rule=TriggerRule.ONE_FAILED,
-    dag=dag
-)
+        Pipeline: {{ dag.dag_id }}
+        Execution Date: {{ ds }}
+        Duration: {{ dag_run.duration }}
+        """,
+        channel=PIPELINE_CONFIG['monitoring']['success_channel'],
+        trigger_rule=TriggerRule.ALL_SUCCESS,
+        dag=dag
+    )
+
+    failure_notification = SlackWebhookOperator(
+        task_id='failure_notification',
+        slack_webhook_conn_id=PIPELINE_CONFIG['monitoring']['slack_webhook_conn_id'],
+        message="""
+        🚨 **ETL Pipeline Failed**
+
+        Pipeline: {{ dag.dag_id }}
+        Execution Date: {{ ds }}
+        Failed Task: {{ ti.task_id }}
+
+        Please check logs: {{ ti.log_url }}
+        """,
+        channel=PIPELINE_CONFIG['monitoring']['failure_channel'],
+        trigger_rule=TriggerRule.ONE_FAILED,
+        dag=dag
+    )
+else:
+    slack_success_alert = PythonOperator(
+        task_id='slack_success_alert',
+        python_callable=lambda **context: print(
+            f"Pipeline {context['dag'].dag_id} completed successfully "
+            f"(Slack alerting disabled)"
+        ),
+        trigger_rule=TriggerRule.ALL_SUCCESS,
+        dag=dag
+    )
+
+    failure_notification = PythonOperator(
+        task_id='failure_notification',
+        python_callable=lambda **context: print(
+            f"Pipeline {context['dag'].dag_id} failed "
+            f"(Slack alerting disabled)"
+        ),
+        trigger_rule=TriggerRule.ONE_FAILED,
+        dag=dag
+    )
 
 # =============================================================================
 # TASK DEPENDENCIES
