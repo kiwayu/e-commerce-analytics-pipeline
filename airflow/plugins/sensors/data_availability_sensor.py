@@ -6,10 +6,10 @@ import logging
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
 
-from airflow.sensors.base import BaseSensorOperator
-from airflow.utils.context import Context
+from airflow.sdk.bases.sensor import BaseSensorOperator
+from airflow.sdk import Context
 from airflow.exceptions import AirflowException
-from airflow.hooks.postgres_hook import PostgresHook
+from airflow.providers.postgres.hooks.postgres import PostgresHook
 
 logger = logging.getLogger(__name__)
 
@@ -65,8 +65,8 @@ class DataAvailabilitySensor(BaseSensorOperator):
         try:
             # Use yesterday's date if target_date not specified
             if not self.target_date:
-                execution_date = context['execution_date']
-                target_date = (execution_date - timedelta(days=1)).strftime('%Y-%m-%d')
+                logical_date = context["logical_date"]
+                target_date = (logical_date - timedelta(days=1)).strftime('%Y-%m-%d')
             else:
                 target_date = self.target_date
             
@@ -277,78 +277,3 @@ class UpstreamSystemHealthSensor(BaseSensorOperator):
             return False
 
 
-class PipelineCompletionSensor(BaseSensorOperator):
-    """
-    Sensor that waits for previous pipeline runs to complete before starting new run.
-    
-    Prevents overlapping pipeline executions and ensures data consistency.
-    """
-    
-    def __init__(
-        self,
-        dag_id: str,
-        execution_date_fn=None,
-        allowed_states: list = None,
-        **kwargs
-    ):
-        """
-        Initialize pipeline completion sensor.
-        
-        Args:
-            dag_id: DAG ID to monitor for completion
-            execution_date_fn: Function to determine which execution to check
-            allowed_states: List of states considered as "complete"
-        """
-        super().__init__(**kwargs)
-        self.dag_id = dag_id
-        self.execution_date_fn = execution_date_fn
-        self.allowed_states = allowed_states or ['success', 'failed', 'skipped']
-    
-    def poke(self, context: Context) -> bool:
-        """
-        Check if previous pipeline run has completed.
-        
-        Args:
-            context: Airflow task context
-            
-        Returns:
-            True if previous run is complete, False otherwise
-        """
-        from airflow.models import DagRun
-        from airflow import settings
-        
-        session = settings.Session()
-        
-        try:
-            # Determine which execution date to check
-            if self.execution_date_fn:
-                target_execution_date = self.execution_date_fn(context['execution_date'])
-            else:
-                # Check previous day's run by default
-                target_execution_date = context['execution_date'] - timedelta(days=1)
-            
-            # Query for the specific DAG run
-            dag_run = session.query(DagRun).filter(
-                DagRun.dag_id == self.dag_id,
-                DagRun.execution_date == target_execution_date
-            ).first()
-            
-            if not dag_run:
-                logger.info(f"No previous run found for {self.dag_id} on {target_execution_date}")
-                return True  # No previous run to wait for
-            
-            current_state = dag_run.state
-            logger.info(f"Previous run state: {current_state}")
-            
-            if current_state in self.allowed_states:
-                logger.info(f"Previous run completed with state: {current_state}")
-                return True
-            else:
-                logger.info(f"Previous run still running with state: {current_state}")
-                return False
-                
-        except Exception as e:
-            logger.error(f"Error checking pipeline completion: {e}")
-            return False
-        finally:
-            session.close()

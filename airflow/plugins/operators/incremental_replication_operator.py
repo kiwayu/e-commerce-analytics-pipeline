@@ -6,10 +6,8 @@ import logging
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 
-from airflow.models import BaseOperator
-from airflow.utils.decorators import apply_defaults
+from airflow.sdk import BaseOperator, Context
 from airflow.exceptions import AirflowException, AirflowSkipException
-from airflow.utils.context import Context
 
 from hooks.postgres_replication_hook import PostgreSQLReplicationHook
 
@@ -39,7 +37,6 @@ class IncrementalReplicationOperator(BaseOperator):
     ui_color = '#4A90E2'
     ui_fgcolor = '#FFFFFF'
     
-    @apply_defaults
     def __init__(
         self,
         source_table: str,
@@ -475,7 +472,6 @@ class ReplicationValidationOperator(BaseOperator):
     ui_color = '#FF9500'
     ui_fgcolor = '#FFFFFF'
     
-    @apply_defaults
     def __init__(
         self,
         source_table: str,

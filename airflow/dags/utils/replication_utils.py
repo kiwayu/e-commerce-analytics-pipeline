@@ -7,7 +7,7 @@ from typing import Dict, List, Optional, Any, Tuple
 from datetime import datetime, timedelta
 import pandas as pd
 
-from airflow.models import Variable
+from airflow.sdk import Variable
 from airflow.exceptions import AirflowException
 
 logger = logging.getLogger(__name__)

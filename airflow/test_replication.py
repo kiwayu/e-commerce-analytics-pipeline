@@ -326,8 +326,8 @@ def test_dag_structure():
             print(f"✓ Monitoring DAG has all expected tasks ({len(expected_monitoring_tasks)} tasks)")
             
             # Check schedule intervals
-            assert dag.schedule_interval == timedelta(minutes=30), "Main DAG schedule incorrect"
-            assert monitoring_dag.schedule_interval == timedelta(hours=1), "Monitoring DAG schedule incorrect"
+            assert dag.schedule == timedelta(minutes=30), "Main DAG schedule incorrect"
+            assert monitoring_dag.schedule == timedelta(hours=1), "Monitoring DAG schedule incorrect"
             print("✓ DAG schedules set correctly")
         
         print("✓ DAG Structure test completed successfully")

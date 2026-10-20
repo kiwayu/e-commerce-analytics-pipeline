@@ -21,11 +21,11 @@ def test_dag_import():
     try:
         # Mock Airflow components to avoid import errors
         with patch('airflow.models.Variable'), \
-             patch('airflow.operators.python.PythonOperator'), \
-             patch('airflow.operators.bash.BashOperator'), \
-             patch('airflow.operators.dummy.DummyOperator'), \
+             patch('airflow.providers.standard.operators.python.PythonOperator'), \
+             patch('airflow.providers.standard.operators.bash.BashOperator'), \
+             patch('airflow.providers.standard.operators.empty.EmptyOperator'), \
              patch('airflow.providers.slack.operators.slack_webhook.SlackWebhookOperator'), \
-             patch('airflow.providers.postgres.operators.postgres.PostgresOperator'), \
+             patch('airflow.providers.common.sql.operators.sql.SQLExecuteQueryOperator'), \
              patch('operators.incremental_replication_operator.IncrementalReplicationOperator'), \
              patch('operators.incremental_replication_operator.ReplicationValidationOperator'):
             
@@ -35,7 +35,7 @@ def test_dag_import():
             dag = daily_etl_pipeline.dag
             
             print(f"✓ DAG imported successfully: {dag.dag_id}")
-            print(f"✓ Schedule interval: {dag.schedule_interval}")
+            print(f"✓ Schedule interval: {dag.schedule}")
             print(f"✓ Max active runs: {dag.max_active_runs}")
             print(f"✓ Catchup: {dag.catchup}")
             
@@ -52,11 +52,11 @@ def test_dag_structure():
     
     try:
         with patch('airflow.models.Variable'), \
-             patch('airflow.operators.python.PythonOperator'), \
-             patch('airflow.operators.bash.BashOperator'), \
-             patch('airflow.operators.dummy.DummyOperator'), \
+             patch('airflow.providers.standard.operators.python.PythonOperator'), \
+             patch('airflow.providers.standard.operators.bash.BashOperator'), \
+             patch('airflow.providers.standard.operators.empty.EmptyOperator'), \
              patch('airflow.providers.slack.operators.slack_webhook.SlackWebhookOperator'), \
-             patch('airflow.providers.postgres.operators.postgres.PostgresOperator'), \
+             patch('airflow.providers.common.sql.operators.sql.SQLExecuteQueryOperator'), \
              patch('operators.incremental_replication_operator.IncrementalReplicationOperator'), \
              patch('operators.incremental_replication_operator.ReplicationValidationOperator'):
             
@@ -116,11 +116,11 @@ def test_dag_configuration():
     
     try:
         with patch('airflow.models.Variable'), \
-             patch('airflow.operators.python.PythonOperator'), \
-             patch('airflow.operators.bash.BashOperator'), \
-             patch('airflow.operators.dummy.DummyOperator'), \
+             patch('airflow.providers.standard.operators.python.PythonOperator'), \
+             patch('airflow.providers.standard.operators.bash.BashOperator'), \
+             patch('airflow.providers.standard.operators.empty.EmptyOperator'), \
              patch('airflow.providers.slack.operators.slack_webhook.SlackWebhookOperator'), \
-             patch('airflow.providers.postgres.operators.postgres.PostgresOperator'), \
+             patch('airflow.providers.common.sql.operators.sql.SQLExecuteQueryOperator'), \
              patch('operators.incremental_replication_operator.IncrementalReplicationOperator'), \
              patch('operators.incremental_replication_operator.ReplicationValidationOperator'):
             
@@ -146,10 +146,10 @@ def test_dag_configuration():
                     return False
             
             # Check schedule
-            if dag.schedule_interval == '0 2 * * *':
+            if dag.schedule == '0 2 * * *':
                 print("✓ Schedule interval correct: Daily at 2 AM UTC")
             else:
-                print(f"✗ Incorrect schedule interval: {dag.schedule_interval}")
+                print(f"✗ Incorrect schedule interval: {dag.schedule}")
                 return False
             
             # Check SLA
@@ -180,11 +180,11 @@ def test_pipeline_config():
     
     try:
         with patch('airflow.models.Variable'), \
-             patch('airflow.operators.python.PythonOperator'), \
-             patch('airflow.operators.bash.BashOperator'), \
-             patch('airflow.operators.dummy.DummyOperator'), \
+             patch('airflow.providers.standard.operators.python.PythonOperator'), \
+             patch('airflow.providers.standard.operators.bash.BashOperator'), \
+             patch('airflow.providers.standard.operators.empty.EmptyOperator'), \
              patch('airflow.providers.slack.operators.slack_webhook.SlackWebhookOperator'), \
-             patch('airflow.providers.postgres.operators.postgres.PostgresOperator'), \
+             patch('airflow.providers.common.sql.operators.sql.SQLExecuteQueryOperator'), \
              patch('operators.incremental_replication_operator.IncrementalReplicationOperator'), \
              patch('operators.incremental_replication_operator.ReplicationValidationOperator'):
             
@@ -239,11 +239,11 @@ def test_task_dependencies():
     
     try:
         with patch('airflow.models.Variable'), \
-             patch('airflow.operators.python.PythonOperator'), \
-             patch('airflow.operators.bash.BashOperator'), \
-             patch('airflow.operators.dummy.DummyOperator'), \
+             patch('airflow.providers.standard.operators.python.PythonOperator'), \
+             patch('airflow.providers.standard.operators.bash.BashOperator'), \
+             patch('airflow.providers.standard.operators.empty.EmptyOperator'), \
              patch('airflow.providers.slack.operators.slack_webhook.SlackWebhookOperator'), \
-             patch('airflow.providers.postgres.operators.postgres.PostgresOperator'), \
+             patch('airflow.providers.common.sql.operators.sql.SQLExecuteQueryOperator'), \
              patch('operators.incremental_replication_operator.IncrementalReplicationOperator'), \
              patch('operators.incremental_replication_operator.ReplicationValidationOperator'):
             
@@ -328,7 +328,7 @@ def run_all_tests():
         print("\nAll tests passed! The ETL pipeline DAG is ready for deployment.")
         print("\nNext Steps:")
         print("1. Set up Airflow connections (postgres_source, postgres_dwh, slack_webhook)")
-        print("2. Configure Airflow pools using pool_configuration.py")
+        print("2. Configure Airflow pools with: airflow pools set <name> <slots> <description>")
         print("3. Set Airflow Variables (dbt_profiles_dir, ge_config_path)")
         print("4. Deploy DAG to Airflow environment")
         print("5. Enable the DAG in Airflow UI")

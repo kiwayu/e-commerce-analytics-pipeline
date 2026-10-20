@@ -275,9 +275,9 @@ def test_dag_structure():
         with patch('airflow.models.Variable'), \
              patch('operators.incremental_replication_operator.IncrementalReplicationOperator'), \
              patch('operators.incremental_replication_operator.ReplicationValidationOperator'), \
-             patch('airflow.operators.python.PythonOperator'), \
-             patch('airflow.operators.email.EmailOperator'), \
-             patch('airflow.sensors.sql.SqlSensor'):
+             patch('airflow.providers.standard.operators.python.PythonOperator'), \
+             patch('airflow.providers.smtp.operators.smtp.EmailOperator'), \
+             patch('airflow.providers.common.sql.sensors.sql.SqlSensor'):
             
             # Import DAGs
             import incremental_replication_dag as dag_module
@@ -293,8 +293,8 @@ def test_dag_structure():
             print("✓ Monitoring DAG ID set correctly")
             
             # Test schedule intervals
-            assert main_dag.schedule_interval == timedelta(minutes=30), "Main DAG schedule incorrect"
-            assert monitoring_dag.schedule_interval == timedelta(hours=1), "Monitoring DAG schedule incorrect"
+            assert main_dag.schedule == timedelta(minutes=30), "Main DAG schedule incorrect"
+            assert monitoring_dag.schedule == timedelta(hours=1), "Monitoring DAG schedule incorrect"
             print("✓ DAG schedules set correctly")
             
             # Test DAG configuration

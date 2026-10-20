@@ -17,3 +17,32 @@ jobs:
           cache-dependency-path: spark/requirements.txt
       - run: pip install -r spark/requirements.txt
       - run: python -m pytest -q spark/tests
+
+  airflow-dags:
+    runs-on: ubuntu-latest
+    env:
+      AIRFLOW_HOME: /tmp/airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__CORE__DAGS_FOLDER: ${{ github.workspace }}/airflow/dags
+      AIRFLOW__CORE__PLUGINS_FOLDER: ${{ github.workspace }}/airflow/plugins
+      PYTHONPATH: ${{ github.workspace }}/airflow/dags:${{ github.workspace }}/airflow/plugins
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install "apache-airflow[celery,postgres,smtp,fab]==3.3.2" --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-3.3.2/constraints-3.12.txt"
+      - name: Parse the DAG folder
+        run: |
+          python - <<'PY'
+          import os
+          from airflow.models.dagbag import DagBag
+          bag = DagBag(os.environ["AIRFLOW__CORE__DAGS_FOLDER"], include_examples=False)
+          for path, err in bag.import_errors.items():
+              print(f"::error file={path}::{err}")
+          print("DAGs:", sorted(bag.dag_ids))
+          assert not bag.import_errors, "DAG import errors"
+          assert {"daily_etl_pipeline"} <= set(bag.dag_ids)
+          PY
+      - name: DAG structure checks
+        run: python airflow/test_dag_structure.py
