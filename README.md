@@ -1,5 +1,7 @@
 # E-commerce Analytics ETL Pipeline
 
+[![CI](https://github.com/kiwayu/e-commerce-analytics-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/kiwayu/e-commerce-analytics-pipeline/actions/workflows/ci.yml)
+
 A local-first ETL pipeline for e-commerce analytics using Apache Airflow, dbt, and PostgreSQL, orchestrated with Docker Compose.
 
 ## Architecture

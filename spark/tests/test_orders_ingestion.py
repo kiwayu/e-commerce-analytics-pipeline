@@ -290,7 +290,7 @@ class TestOrdersIngestionService:
         """Test storing orders in database."""
         # Mock database session
         mock_session = MagicMock()
-        mock_get_session.return_value.__enter__.return_value = mock_session
+        mock_get_session.return_value = mock_session
         
         orders = [
             {
@@ -311,7 +311,7 @@ class TestOrdersIngestionService:
         assert mock_session.add.call_count == 2
         assert mock_session.commit.call_count >= 1
     
-    @patch('spark.config.database.test_database_connection')
+    @patch('spark.ingestion.orders_ingestion.test_database_connection')
     @patch.object(OrdersIngestionService, 'fetch_orders_from_api')
     @patch.object(OrdersIngestionService, 'store_orders_in_database')
     def test_run_ingestion_success(self, mock_store, mock_fetch, mock_test_db):
@@ -334,7 +334,7 @@ class TestOrdersIngestionService:
         assert 'duration_seconds' in result
         assert result['error'] is None
     
-    @patch('spark.config.database.test_database_connection')
+    @patch('spark.ingestion.orders_ingestion.test_database_connection')
     def test_run_ingestion_db_connection_failure(self, mock_test_db):
         """Test ingestion failure due to database connection."""
         mock_test_db.return_value = False

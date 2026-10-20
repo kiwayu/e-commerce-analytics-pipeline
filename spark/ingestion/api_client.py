@@ -65,7 +65,7 @@ class RetryConfig:
         
         if self.jitter:
             # Add jitter to prevent thundering herd
-            delay *= (0.5 + random.random() * 0.5)
+            delay *= (1 + random.random() * 0.5)
         
         return delay
 

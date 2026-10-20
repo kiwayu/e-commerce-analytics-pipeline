@@ -103,7 +103,8 @@ class RawOrders(Base):
             source_system=source_system,
             batch_id=batch_id,
             record_hash=record_hash,
-            ingestion_timestamp=datetime.utcnow()
+            ingestion_timestamp=datetime.utcnow(),
+            is_valid=True
         )
     
     @staticmethod
