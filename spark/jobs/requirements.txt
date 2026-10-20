@@ -2,7 +2,7 @@
 # Dependencies for incremental file ingestion and processing
 
 # PySpark core
-pyspark==3.4.1
+pyspark==3.5.8
 
 # Database connectivity
 psycopg2-binary==2.9.7
