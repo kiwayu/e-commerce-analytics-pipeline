@@ -3,7 +3,7 @@
 
 # HTTP client and API interaction
 requests==2.31.0
-urllib3==1.26.18
+urllib3==2.8.0
 
 # Database ORM and connectivity
 SQLAlchemy==1.4.53
