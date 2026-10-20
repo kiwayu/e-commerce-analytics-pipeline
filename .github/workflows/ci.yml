@@ -31,7 +31,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install "apache-airflow[celery,postgres,smtp,fab]==3.3.2" pandas --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-3.3.2/constraints-3.12.txt"
+      - run: pip install "apache-airflow[celery,postgres,smtp,fab,slack]==3.3.2" pandas --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-3.3.2/constraints-3.12.txt"
       - name: Parse the DAG folder
         run: |
           python - <<'PY'
