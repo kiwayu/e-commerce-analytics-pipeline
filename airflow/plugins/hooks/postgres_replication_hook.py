@@ -9,9 +9,9 @@ from datetime import datetime, date, timezone
 import pandas as pd
 from contextlib import contextmanager
 
-from airflow.hooks.postgres_hook import PostgresHook
+from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.exceptions import AirflowException
-from airflow.models import Variable
+from airflow.sdk import Variable
 
 logger = logging.getLogger(__name__)
 

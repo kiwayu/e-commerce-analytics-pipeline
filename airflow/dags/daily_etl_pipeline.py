@@ -15,13 +15,12 @@ import os
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Any
 
-from airflow import DAG
-from airflow.operators.python import PythonOperator
-from airflow.operators.bash import BashOperator
-from airflow.operators.dummy import DummyOperator
-from airflow.operators.email import EmailOperator
-from airflow.sensors.filesystem import FileSensor
-from airflow.providers.postgres.operators.postgres import PostgresOperator
+from airflow.sdk import DAG, TaskGroup, Variable
+from airflow.providers.standard.operators.python import PythonOperator
+from airflow.providers.standard.operators.bash import BashOperator
+from airflow.providers.standard.operators.empty import EmptyOperator
+from airflow.providers.standard.sensors.filesystem import FileSensor
+from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 
 try:
     from airflow.providers.slack.operators.slack_webhook import SlackWebhookOperator
@@ -29,9 +28,7 @@ try:
 except ImportError:
     SLACK_PROVIDER_AVAILABLE = False
 from airflow.exceptions import AirflowSkipException
-from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
-from airflow.models import Variable
 
 # Import custom operators
 try:
@@ -101,7 +98,7 @@ def get_pipeline_context(**context) -> Dict[str, Any]:
     Returns:
         Dictionary with pipeline context information
     """
-    execution_date = context['execution_date']
+    execution_date = context["logical_date"]
     
     return {
         'pipeline_id': f"etl_{execution_date.strftime('%Y%m%d_%H%M%S')}",
@@ -491,7 +488,7 @@ def send_success_notification(**context) -> None:
 🎉 **ETL Pipeline Success** 🎉
 
 **Pipeline ID:** {pipeline_context['pipeline_id']}
-**Execution Date:** {pipeline_context['execution_date']}
+**Execution Date:** {pipeline_context["logical_date"]}
 **Data Date:** {pipeline_context['data_date']}
 
 **📊 Ingestion Summary:**
@@ -519,7 +516,7 @@ dag = DAG(
     DAG_ID,
     default_args=default_args,
     description='Daily ETL Pipeline for E-commerce Analytics',
-    schedule_interval=SCHEDULE_INTERVAL,
+    schedule=SCHEDULE_INTERVAL,
     max_active_runs=1,  # Prevent overlapping runs
     catchup=False,  # Don't backfill
     tags=['etl', 'daily', 'production', 'analytics'],
@@ -531,7 +528,7 @@ dag = DAG(
 # =============================================================================
 
 # Start task
-start_pipeline = DummyOperator(
+start_pipeline = EmptyOperator(
     task_id='start_pipeline',
     dag=dag
 )
@@ -587,7 +584,7 @@ with TaskGroup('ingestion', dag=dag) as ingestion_group:
     )
 
 # Ingestion completion gate
-ingestion_complete = DummyOperator(
+ingestion_complete = EmptyOperator(
     task_id='ingestion_complete',
     # NONE_FAILED so optional ingestion paths (API/file) may skip without
     # blocking the downstream transformations.
@@ -670,9 +667,9 @@ with TaskGroup('validation', dag=dag) as validation_group:
     )
     
     # Business metrics validation
-    business_metrics_validation = PostgresOperator(
+    business_metrics_validation = SQLExecuteQueryOperator(
         task_id='business_metrics_validation',
-        postgres_conn_id='postgres_dwh',
+        conn_id='postgres_dwh',
         sql="""
         -- Validate key business metrics
         WITH validation_checks AS (

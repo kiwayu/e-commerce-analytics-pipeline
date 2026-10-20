@@ -6,7 +6,7 @@ A local-first ETL pipeline for e-commerce analytics using Apache Airflow, dbt, a
 
 ## Architecture
 
-- **Orchestration**: Apache Airflow 2.7 (CeleryExecutor: webserver, scheduler, worker, triggerer, Redis)
+- **Orchestration**: Apache Airflow 3.3 (CeleryExecutor: API server, scheduler, DAG processor, worker, triggerer, Redis)
 - **Transformation**: dbt-core 1.6 (staging → intermediate → marts, 100+ schema tests)
 - **Storage**: PostgreSQL 15 (separate metadata DB and data warehouse)
 - **Ingestion**: Custom incremental replication operator (watermark-based upsert), plus optional API/PySpark file ingestion
@@ -53,7 +53,7 @@ docker exec -i ecommerce-data-warehouse psql -U ecommerce_user -d ecommerce \
   < ../sql/seed_sample_data.sql
 
 # One-time Airflow setup: pools and variables used by the daily DAG
-docker exec airflow-webserver bash -c "
+docker exec airflow-apiserver bash -c "
   airflow pools set ingestion_pool 3 'Parallel ingestion tasks' &&
   airflow pools set transformation_pool 2 'dbt transformation tasks' &&
   airflow pools set validation_pool 2 'Data validation tasks' &&
@@ -63,8 +63,8 @@ docker exec airflow-webserver bash -c "
 "
 
 # Run the pipeline
-docker exec airflow-webserver airflow dags unpause daily_etl_pipeline
-docker exec airflow-webserver airflow dags trigger daily_etl_pipeline
+docker exec airflow-apiserver airflow dags unpause daily_etl_pipeline
+docker exec airflow-apiserver airflow dags trigger daily_etl_pipeline
 ```
 
 Access:
@@ -74,6 +74,9 @@ Access:
 - pgAdmin (optional): `docker compose --profile admin up -d`, then http://localhost:5050
 
 ## Data Pipeline
+
+A longer walkthrough of the design is in [docs/how-it-works.md](docs/how-it-works.md).
+
 
 The `daily_etl_pipeline` DAG runs:
 

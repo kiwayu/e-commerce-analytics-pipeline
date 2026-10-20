@@ -8,10 +8,10 @@ to data warehouse using watermark-based change detection.
 from datetime import datetime, timedelta
 from typing import Dict, Any
 
-from airflow import DAG
-from airflow.operators.python import PythonOperator
-from airflow.operators.email import EmailOperator
-from airflow.sensors.sql import SqlSensor
+from airflow.sdk import DAG
+from airflow.providers.standard.operators.python import PythonOperator
+from airflow.providers.smtp.operators.smtp import EmailOperator
+from airflow.providers.common.sql.sensors.sql import SqlSensor
 from airflow.utils.trigger_rule import TriggerRule
 
 # Import custom operators (assuming they're in plugins)
@@ -194,7 +194,7 @@ def send_failure_notification(**context) -> None:
         'dag_id': dag_run.dag_id,
         'run_id': dag_run.run_id,
         'task_id': task_instance.task_id,
-        'execution_date': context['execution_date'].isoformat(),
+        'execution_date': context["logical_date"].isoformat(),
         'error_info': error_info,
         'log_url': task_instance.log_url
     }
@@ -210,7 +210,7 @@ dag = DAG(
     DAG_ID,
     default_args=default_args,
     description='Incremental replication of customer data using high-water mark',
-    schedule_interval=timedelta(minutes=30),  # Run every 30 minutes
+    schedule=timedelta(minutes=30),  # Run every 30 minutes
     max_active_runs=1,  # Prevent overlapping runs
     catchup=False,  # Don't backfill
     tags=['replication', 'incremental', 'customers', 'postgres'],
@@ -307,7 +307,7 @@ success_notification = EmailOperator(
     html_content="""
     <h3>Customer Data Replication Completed</h3>
     <p><strong>DAG:</strong> {{ dag.dag_id }}</p>
-    <p><strong>Execution Date:</strong> {{ execution_date }}</p>
+    <p><strong>Execution Date:</strong> {{ logical_date }}</p>
     <p><strong>Duration:</strong> {{ dag_run.duration }}</p>
     
     <h4>Replication Details:</h4>
@@ -339,7 +339,7 @@ monitoring_dag = DAG(
         'retries': 1,
     },
     description='Monitor replication health and lag',
-    schedule_interval=timedelta(hours=1),  # Run every hour
+    schedule=timedelta(hours=1),  # Run every hour
     max_active_runs=1,
     catchup=False,
     tags=['monitoring', 'replication', 'health'],
@@ -374,7 +374,7 @@ health_alert = EmailOperator(
     <h3>Replication Health Issue Detected</h3>
     <p><strong>Table:</strong> {{ params.source_table }} → {{ params.target_table }}</p>
     <p><strong>Issue:</strong> Replication lag exceeds threshold</p>
-    <p><strong>Time:</strong> {{ execution_date }}</p>
+    <p><strong>Time:</strong> {{ logical_date }}</p>
     
     <p>Please investigate the replication process immediately.</p>
     

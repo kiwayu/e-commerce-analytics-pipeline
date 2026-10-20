@@ -176,7 +176,7 @@ dbt test --target prod
 - **Checkpoints**: orders_data_quality, customers_data_quality, revenue_data_quality
 
 **Business Metrics Validation**
-- **Operator**: `PostgresOperator`
+- **Operator**: `SQLExecuteQueryOperator`
 - **Pool**: `validation_pool`
 - **SLA**: 15 minutes
 - **Purpose**: Validate key business metrics with SQL
@@ -206,7 +206,9 @@ pools = {
 
 ```bash
 # Setup pools
-python /opt/airflow/dags/etl/pool_configuration.py
+airflow pools set ingestion_pool 3 "Parallel ingestion tasks"
+airflow pools set transformation_pool 2 "dbt transformation tasks"
+airflow pools set validation_pool 2 "Data quality validation tasks"
 
 # Monitor utilization
 airflow pools list
@@ -319,7 +321,7 @@ WHERE DATE(order_date) = CURRENT_DATE - INTERVAL '1 day'
 
 1. **Airflow Installation**
 ```bash
-pip install apache-airflow[postgres,redis,slack]==2.7.3
+pip install apache-airflow[postgres,redis,slack]==3.3.2
 ```
 
 2. **Database Setup**
@@ -370,7 +372,7 @@ cp -r airflow/dags/etl $AIRFLOW_HOME/dags/
 
 2. **Setup Pools**
 ```bash
-python $AIRFLOW_HOME/dags/etl/pool_configuration.py
+airflow pools set ingestion_pool 3 "Parallel ingestion tasks"
 ```
 
 3. **Configure Variables**
@@ -433,7 +435,7 @@ with TaskGroup('ingestion', dag=dag) as ingestion_group:
 
 ```python
 # Add to validation TaskGroup
-custom_validation = PostgresOperator(
+custom_validation = SQLExecuteQueryOperator(
     task_id='custom_business_validation',
     postgres_conn_id='postgres_dwh',
     sql="""
@@ -503,13 +505,15 @@ def custom_alert_logic(**context):
 execution_timeout=timedelta(hours=8)
 
 # Check resource utilization
-airflow tasks state dag_id task_id execution_date
+airflow tasks state dag_id task_id logical_date
 ```
 
 **2. Pool Exhaustion**
 ```bash
 # Monitor pool utilization
-python /opt/airflow/dags/etl/pool_configuration.py
+airflow pools set ingestion_pool 3 "Parallel ingestion tasks"
+airflow pools set transformation_pool 2 "dbt transformation tasks"
+airflow pools set validation_pool 2 "Data quality validation tasks"
 
 # Increase pool slots
 airflow pools set pool_name 5 "Increased capacity"

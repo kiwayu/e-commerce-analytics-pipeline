@@ -153,7 +153,7 @@ docker-compose logs airflow-scheduler
 docker-compose logs postgres-warehouse
 
 # Follow logs
-docker-compose logs -f airflow-webserver
+docker-compose logs -f airflow-apiserver
 ```
 
 ### Flower (Celery Monitoring)
@@ -175,8 +175,8 @@ Access at http://localhost:5555
 docker-compose run --rm airflow-cli bash
 
 # Run specific commands
-docker exec airflow-webserver airflow dags list
-docker exec airflow-webserver airflow tasks test my_dag my_task 2023-01-01
+docker exec airflow-apiserver airflow dags list
+docker exec airflow-apiserver airflow tasks test my_dag my_task 2023-01-01
 ```
 
 ### Database Management
