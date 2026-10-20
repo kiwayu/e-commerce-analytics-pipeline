@@ -75,11 +75,11 @@ Access:
 
 The `daily_etl_pipeline` DAG runs:
 
-1. **Prerequisite validation** — database connectivity, disk space, required variables
-2. **Ingestion** — incremental replication `raw.raw_customers` → `staging.customers` (watermark upsert). API and PySpark file ingestion are optional and skip cleanly when their dependencies aren't installed
-3. **Transformation** — dbt staging → intermediate → marts, then `dbt test`
-4. **Validation** — SQL business-metric checks against `analytics.fact_orders`
-5. **Notifications** — log-based by default; Slack alerts activate with `ENABLE_SLACK_ALERTS=true` and a `slack_webhook` connection
+1. **Prerequisite validation**: database connectivity, disk space, required variables
+2. **Ingestion**: incremental replication `raw.raw_customers` → `staging.customers` (watermark upsert). API and PySpark file ingestion are optional and skip cleanly when their dependencies aren't installed
+3. **Transformation**: dbt staging → intermediate → marts, then `dbt test`
+4. **Validation**: SQL business-metric checks against `analytics.fact_orders`
+5. **Notifications**: log-based by default; Slack alerts activate with `ENABLE_SLACK_ALERTS=true` and a `slack_webhook` connection
 
 ## Running dbt Standalone
 
@@ -118,7 +118,7 @@ cd airflow && python -m pytest test_dag_structure.py
 
 ## Security Notes
 
-- No secrets in version control — `.env` is gitignored, `.env.example` holds placeholders
+- No secrets in version control: `.env` is gitignored, `.env.example` holds placeholders
 - Default dev credentials are for local use only; generate proper Fernet/webserver keys for anything shared
 - Use IAM roles and a secrets manager for production deployments
 
