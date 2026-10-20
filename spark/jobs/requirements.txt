@@ -8,7 +8,7 @@ pyspark==3.4.1
 psycopg2-binary==2.9.7
 
 # Configuration and environment
-python-dotenv==1.0.0
+python-dotenv==1.2.2
 
 # Date and time handling
 python-dateutil==2.8.2
@@ -23,5 +23,5 @@ pathlib2==2.3.7
 typing-extensions==4.8.0
 
 # Testing (optional)
-pytest==7.4.3
+pytest==9.0.3
 pytest-spark==0.6.0
