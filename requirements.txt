@@ -6,7 +6,7 @@
 # CORE ETL FRAMEWORK
 # =============================================================================
 # Apache Airflow with core dependencies
-apache-airflow==2.7.3
+apache-airflow==3.3.1
 apache-airflow-providers-postgres==5.7.1
 apache-airflow-providers-amazon==8.13.0
 apache-airflow-providers-docker==3.8.0
