@@ -37,7 +37,7 @@ jobs:
           python - <<'PY'
           import os
           from airflow.models.dagbag import DagBag
-          bag = DagBag(os.environ["AIRFLOW__CORE__DAGS_FOLDER"], include_examples=False)
+          bag = DagBag(os.environ["AIRFLOW__CORE__DAGS_FOLDER"])
           for path, err in bag.import_errors.items():
               print(f"::error file={path}::{err}")
           print("DAGs:", sorted(bag.dag_ids))
