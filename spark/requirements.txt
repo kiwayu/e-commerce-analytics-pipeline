@@ -10,7 +10,7 @@ SQLAlchemy==1.4.53
 psycopg2-binary==2.9.7
 
 # Configuration and environment
-python-dotenv==1.0.0
+python-dotenv==1.2.2
 
 # Testing framework
 pytest==7.4.3
