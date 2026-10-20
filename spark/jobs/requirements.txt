@@ -23,5 +23,5 @@ pathlib2==2.3.7
 typing-extensions==4.8.0
 
 # Testing (optional)
-pytest==7.4.3
+pytest==9.0.3
 pytest-spark==0.6.0
