@@ -2,7 +2,7 @@
 # Specific requirements for the orders ingestion functionality
 
 # HTTP client and API interaction
-requests==2.31.0
+requests==2.33.0
 urllib3==1.26.18
 
 # Database ORM and connectivity
