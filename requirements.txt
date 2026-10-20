@@ -83,7 +83,7 @@ pydantic==2.4.2
 click==8.1.7
 
 # Secrets management
-cryptography==41.0.7
+cryptography==50.0.0
 
 # =============================================================================
 # MONITORING & LOGGING
