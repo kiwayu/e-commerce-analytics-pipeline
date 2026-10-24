@@ -77,7 +77,6 @@ snapshots:
 seeds:
   ecommerce_analytics:
     +schema: seeds
-    +materialized: table
 
 # Configure tests
 tests:
