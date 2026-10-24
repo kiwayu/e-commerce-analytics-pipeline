@@ -62,7 +62,7 @@ cleaned_shipments as (
         shipment_id,
         order_id,
         tracking_number,
-        initcap(trim(carrier)) as carrier,
+        trim(carrier) as carrier,
         lower(trim(shipping_method)) as shipping_method,
         lower(trim(shipment_status)) as shipment_status,
         cast(shipped_date as timestamp) as shipped_date,
