@@ -58,7 +58,8 @@ def test_dag_structure():
             'ingestion_complete',
             'success_notification',
             'slack_success_alert',
-            'failure_notification'
+            'failure_notification',
+            'export_dashboard'
         ]
             
         for expected_task in expected_tasks:
@@ -239,6 +240,14 @@ def test_task_dependencies():
             print("✗ Missing ingestion_complete task")
             return False
             
+        # The dashboard export runs after validation and before the success notification
+        export_task = task_dict.get('export_dashboard')
+        if export_task and any(tid.startswith('validation.') for tid in export_task.upstream_task_ids)                 and 'success_notification' in export_task.downstream_task_ids:
+            print("✓ Dashboard export runs after validation and before notification")
+        else:
+            print("✗ Dashboard export is missing or wired incorrectly")
+            return False
+
         return True
             
     except Exception as e:
