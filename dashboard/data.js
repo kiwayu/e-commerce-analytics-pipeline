@@ -1,8 +1,8 @@
 window.DASHBOARD_DATA = {
  "as_of": "2026-10-24",
- "generated_at": "2026-10-24T10:41:47+00:00",
+ "generated_at": "2026-10-24T10:48:09+00:00",
  "pipeline": {
-  "last_run": "2026-10-24T11:41:46.412523+01:00",
+  "last_run": "2026-10-24T11:47:52.378166+01:00",
   "raw_loaded_at": "2026-10-24T11:28:16.859562+01:00",
   "layers": [
    {
@@ -76,9 +76,9 @@ window.DASHBOARD_DATA = {
   ],
   "dbt": {
    "models": 9,
-   "tests": 112,
-   "tests_passed": 112,
-   "elapsed_seconds": 13.4
+   "tests": 114,
+   "tests_passed": 114,
+   "elapsed_seconds": 15.2
   }
  },
  "daily": [

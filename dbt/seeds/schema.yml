@@ -2,15 +2,21 @@ version: 2
 
 seeds:
   - name: fx_rates
-    description: Rates used to express every order and shipment amount in the base currency (see vars.base_currency).
+    description: Rates used to express every order and shipment amount in the base currency (see vars.base_currency). Each row applies from valid_from until the next row for the same currency.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [currency, valid_from]
     config:
       column_types:
         currency: varchar(3)
+        valid_from: date
         rate_to_base: numeric(12, 6)
     columns:
       - name: currency
         tests:
-          - unique
+          - not_null
+      - name: valid_from
+        tests:
           - not_null
       - name: rate_to_base
         tests:

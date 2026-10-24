@@ -788,13 +788,21 @@ ingestion_complete >> transformation_group
 # Validation flow (after transformation)
 transformation_group >> validation_group
 
+# Refresh the static dashboard from the marts once validation has passed
+export_dashboard = BashOperator(
+    task_id='export_dashboard',
+    bash_command='cd /opt/airflow && python dashboard/export.py',
+    dag=dag
+)
+
 # Success notifications (after all tasks complete successfully)
-validation_group >> [success_notification, slack_success_alert]
+validation_group >> export_dashboard >> [success_notification, slack_success_alert]
 
 # Failure notifications (on any task failure)
 [
     validate_prerequisites_task,
     ingestion_group,
-    transformation_group, 
-    validation_group
+    transformation_group,
+    validation_group,
+    export_dashboard
 ] >> failure_notification

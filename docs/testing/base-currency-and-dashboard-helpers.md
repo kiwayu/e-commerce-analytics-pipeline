@@ -53,3 +53,18 @@ Journeys derived during this change, no separate plan file.
 | # | What is guaranteed | Test | Type | Result |
 |---|--------------------|------|------|--------|
 | 8 | Every calendar day between the first and last order has a `revenue_daily` row, and the 7-day averages count empty days as zero | `revenue_daily_counts_days_without_orders` | dbt unit test | PASS |
+
+## Dated exchange rates, original_currency, and the export task
+
+- `fx_rates` gained a `valid_from` column. Staging now looks up, per order and per shipment, the latest rate whose `valid_from` is on or before the order date (shipped date for shipments) with a lateral join.
+- RED: `dbt test --select unit_test:stg_raw_orders_uses_the_rate_in_force_on_the_order_date` failed at compile time: `Invalid column name: 'valid_from' in unit test fixture for 'fx_rates'`.
+- GREEN: the unit test converts two EUR orders either side of a rate change at 1.08 and 1.10 and a USD order at 1.00; `dbt build --full-refresh` finished `PASS=131 WARN=0 ERROR=0`.
+- `fact_orders.order_currency` is renamed `original_currency` with a `not_null` test. RED: `column "original_currency" does not exist`. GREEN: passes in the same build.
+- The daily DAG gained an `export_dashboard` task between validation and the notifications, the Compose file mounts `dashboard/` into the Airflow containers, and `export.py` falls back to psycopg2 when psycopg 3 is absent. RED: `airflow/test_dag_structure.py` was extended first and the CI job `airflow-dags` failed on the pushed test-only commit with `Missing expected task: export_dashboard`. GREEN: the following CI run passes with the task in place. Airflow does not install on Windows, so this check runs only in CI.
+
+| # | What is guaranteed | Test | Type | Result |
+|---|--------------------|------|------|--------|
+| 9 | Orders and shipments use the exchange rate in force on their date | `stg_raw_orders_uses_the_rate_in_force_on_the_order_date` | dbt unit test | PASS |
+| 10 | `fx_rates` has at most one rate per currency per start date | `dbt_utils.unique_combination_of_columns` in `dbt/seeds/schema.yml` | dbt schema test | PASS |
+| 11 | `fact_orders` records the currency each order was placed in | `not_null_fact_orders_original_currency` | dbt schema test | PASS |
+| 12 | The daily DAG exports the dashboard after validation and before notifying | `airflow/test_dag_structure.py` | DAG structure check (CI) | PASS |

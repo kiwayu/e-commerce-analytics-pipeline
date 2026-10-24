@@ -24,7 +24,7 @@ orders as (
         total_amount,
         net_amount,
         gross_amount,
-        currency as order_currency,
+        currency as original_currency,
         payment_method
 
     from {{ ref('stg_raw_orders') }}
@@ -148,7 +148,7 @@ orders_with_shipments as (
         orders.total_amount,
         orders.net_amount,
         orders.gross_amount,
-        orders.order_currency,
+        orders.original_currency,
         orders.payment_method,
         
         {# Shipment data #}

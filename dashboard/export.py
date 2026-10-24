@@ -2,6 +2,7 @@
 
 Reads the same DWH_POSTGRES_* variables as dbt/profiles.yml, so it works
 against the Docker warehouse, a local Postgres, or the CI service container.
+The daily Airflow DAG runs it as its last step; CI runs it before deploying.
 
     python dashboard/export.py
 """
@@ -12,7 +13,10 @@ from decimal import Decimal
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-import psycopg
+try:
+    import psycopg
+except ImportError:  # the Airflow image ships psycopg2 with dbt-postgres
+    import psycopg2 as psycopg
 
 HERE = Path(__file__).resolve().parent
 RUN_RESULTS = HERE.parent / "dbt" / "target" / "run_results.json"

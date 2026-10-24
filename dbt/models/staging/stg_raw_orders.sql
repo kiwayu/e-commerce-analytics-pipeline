@@ -58,8 +58,14 @@ converted_orders as (
 
     from orders_source
 
-    left join {{ ref('fx_rates') }} as fx
-        on fx.currency = upper(trim(orders_source.currency))
+    left join lateral (
+        select rates.rate_to_base
+        from {{ ref('fx_rates') }} as rates
+        where rates.currency = upper(trim(orders_source.currency))
+          and rates.valid_from <= cast(orders_source.order_date as date)
+        order by rates.valid_from desc
+        limit 1
+    ) as fx on true
 
 ),
 

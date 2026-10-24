@@ -126,8 +126,14 @@ cleaned_shipments as (
 
     from shipments_source
 
-    left join {{ ref('fx_rates') }} as fx
-        on fx.currency = upper(trim(shipments_source.currency))
+    left join lateral (
+        select rates.rate_to_base
+        from {{ ref('fx_rates') }} as rates
+        where rates.currency = upper(trim(shipments_source.currency))
+          and rates.valid_from <= cast(coalesce(shipments_source.shipped_date, current_timestamp) as date)
+        order by rates.valid_from desc
+        limit 1
+    ) as fx on true
 
 ),
 

@@ -31,7 +31,7 @@ orders_with_shipments as (
         total_amount,
         net_amount,
         gross_amount,
-        order_currency,
+        original_currency,
         payment_method,
         total_shipments,
         delivered_shipments,
@@ -91,7 +91,7 @@ fact_orders as (
         orders_with_shipments.order_status_group,
         orders_with_shipments.order_value_tier,
         orders_with_shipments.payment_method,
-        orders_with_shipments.order_currency,
+        orders_with_shipments.original_currency,
         
         {# Customer attributes #}
         customers.customer_segment,

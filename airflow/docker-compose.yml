@@ -85,6 +85,7 @@ x-airflow-common:
     - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
     - airflow-data:/opt/airflow/data
     - ../dbt:/opt/airflow/dbt
+    - ../dashboard:/opt/airflow/dashboard
     - ../spark:/opt/airflow/spark
     - ../great_expectations:/opt/airflow/great_expectations
     - ../sql:/opt/airflow/sql

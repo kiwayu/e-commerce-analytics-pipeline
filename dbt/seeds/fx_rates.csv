@@ -1,6 +1,6 @@
-currency,rate_to_base
-USD,1.00
-EUR,1.08
-GBP,1.27
-CAD,0.73
-AUD,0.65
+currency,valid_from,rate_to_base
+USD,2020-01-01,1.00
+EUR,2020-01-01,1.08
+GBP,2020-01-01,1.27
+CAD,2020-01-01,0.73
+AUD,2020-01-01,0.65

@@ -116,7 +116,8 @@ The `daily_etl_pipeline` DAG runs:
 2. **Ingestion**: incremental replication `raw.raw_customers` → `staging.customers` (watermark upsert). API and PySpark file ingestion are optional and skip cleanly when their dependencies aren't installed
 3. **Transformation**: dbt staging → intermediate → marts, then `dbt test`
 4. **Validation**: SQL business-metric checks against `analytics.fact_orders`
-5. **Notifications**: log-based by default; Slack alerts activate with `ENABLE_SLACK_ALERTS=true` and a `slack_webhook` connection
+5. **Dashboard export**: `dashboard/export.py` rewrites `dashboard/data.js` from the marts
+6. **Notifications**: log-based by default; Slack alerts activate with `ENABLE_SLACK_ALERTS=true` and a `slack_webhook` connection
 
 ## Running dbt Standalone
 
