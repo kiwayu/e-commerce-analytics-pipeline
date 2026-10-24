@@ -113,6 +113,10 @@ models:
       Core orders fact table combining order, customer, and shipment data
       for comprehensive order analytics. Grain: one row per order.
     columns:
+      - name: original_currency
+        description: Currency the order was placed in; every amount on the row is in the base currency
+        tests:
+          - not_null
       - name: order_id
         description: Unique business identifier for the order
         tests:

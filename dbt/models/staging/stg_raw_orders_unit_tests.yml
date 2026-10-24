@@ -1,0 +1,22 @@
+version: 2
+
+unit_tests:
+  - name: stg_raw_orders_uses_the_rate_in_force_on_the_order_date
+    description: Each order is converted with the latest fx_rates row whose valid_from is on or before the order date.
+    model: stg_raw_orders
+    given:
+      - input: source('raw', 'raw_orders')
+        rows:
+          - {order_id: ORD-1, customer_id: CUST-1, order_date: "2026-03-01 09:00:00", order_status: delivered, total_amount: 100, currency: EUR, payment_method: paypal, discount_amount: 10, tax_amount: 8, shipping_cost: 5, source_system: test, is_valid: true}
+          - {order_id: ORD-2, customer_id: CUST-1, order_date: "2026-09-01 09:00:00", order_status: delivered, total_amount: 100, currency: EUR, payment_method: paypal, discount_amount: 10, tax_amount: 8, shipping_cost: 5, source_system: test, is_valid: true}
+          - {order_id: ORD-3, customer_id: CUST-2, order_date: "2026-09-01 09:00:00", order_status: delivered, total_amount: 100, currency: USD, payment_method: paypal, discount_amount: 0, tax_amount: 0, shipping_cost: 0, source_system: test, is_valid: true}
+      - input: ref('fx_rates')
+        rows:
+          - {currency: USD, valid_from: "2026-01-01", rate_to_base: 1.00}
+          - {currency: EUR, valid_from: "2026-01-01", rate_to_base: 1.08}
+          - {currency: EUR, valid_from: "2026-06-01", rate_to_base: 1.10}
+    expect:
+      rows:
+        - {order_id: ORD-1, total_amount: "108.00", discount_amount: "10.80", net_amount: "97.20", fx_rate: "1.080000"}
+        - {order_id: ORD-2, total_amount: "110.00", discount_amount: "11.00", net_amount: "99.00", fx_rate: "1.100000"}
+        - {order_id: ORD-3, total_amount: "100.00", discount_amount: "0.00", net_amount: "100.00", fx_rate: "1.000000"}
