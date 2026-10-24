@@ -45,3 +45,9 @@ test("delta reports percentage change, points for rates, and nothing without a b
   assert.deepEqual(f.delta(0.57, 0.55, true), { text: "+2.0 pts", dir: "up" });
   assert.equal(f.delta(10, 0), null);
 });
+
+test("date helpers format ISO input in UTC", () => {
+  assert.equal(f.day("2026-10-24"), "24 Oct");
+  assert.match(f.dayLong("2026-10-24"), /^Sat,? 24 Oct 2026$/);
+  assert.match(f.stamp("2026-10-24T09:51:46+00:00"), /24 Oct 2026, 09:51 UTC$/);
+});

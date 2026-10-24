@@ -85,7 +85,7 @@ jobs:
           dbt deps
           dbt build
       - name: Dashboard helper tests
-        run: node --test dashboard/
+        run: node --test dashboard/format.test.js
       - name: Export dashboard data
         run: python dashboard/export.py
       - uses: actions/upload-pages-artifact@v3
