@@ -35,16 +35,24 @@ orders as (
 
 ),
 
-daily_revenue as (
+{# One row per calendar day, so days without orders count as zero in the moving averages #}
+date_spine as (
+
+    select cast(generate_series(
+        cast(min(cast(order_date as date)) as timestamp),
+        cast(max(cast(order_date as date)) as timestamp),
+        interval '1 day'
+    ) as date) as date_day
+
+    from orders
+
+),
+
+daily_orders as (
 
     select
         cast(order_date as date) as date_day,
-        extract(year from order_date) as order_year,
-        extract(quarter from order_date) as order_quarter,
-        extract(month from order_date) as order_month,
-        extract(week from order_date) as order_week,
-        extract(dow from order_date) as day_of_week,
-        
+
         {# Order counts #}
         count(*) as total_orders,
         count(
@@ -104,7 +112,37 @@ daily_revenue as (
 
     from orders
 
-    group by 1, 2, 3, 4, 5, 6
+    group by 1
+
+),
+
+daily_revenue as (
+
+    select
+        date_spine.date_day,
+        extract(year from date_spine.date_day) as order_year,
+        extract(quarter from date_spine.date_day) as order_quarter,
+        extract(month from date_spine.date_day) as order_month,
+        extract(week from date_spine.date_day) as order_week,
+        extract(dow from date_spine.date_day) as day_of_week,
+        coalesce(daily_orders.total_orders, 0) as total_orders,
+        coalesce(daily_orders.fulfilled_orders, 0) as fulfilled_orders,
+        coalesce(daily_orders.cancelled_orders, 0) as cancelled_orders,
+        coalesce(daily_orders.returned_orders, 0) as returned_orders,
+        coalesce(daily_orders.clean_orders, 0) as clean_orders,
+        coalesce(daily_orders.gross_revenue, 0) as gross_revenue,
+        coalesce(daily_orders.net_revenue, 0) as net_revenue,
+        coalesce(daily_orders.cancelled_revenue, 0) as cancelled_revenue,
+        coalesce(daily_orders.returned_revenue, 0) as returned_revenue,
+        daily_orders.average_order_value,
+        coalesce(daily_orders.vip_revenue, 0) as vip_revenue,
+        coalesce(daily_orders.champion_revenue, 0) as champion_revenue,
+        coalesce(daily_orders.new_customer_revenue, 0) as new_customer_revenue
+
+    from date_spine
+
+    left join daily_orders
+        on daily_orders.date_day = date_spine.date_day
 
 ),
 
@@ -157,15 +195,15 @@ final_revenue_daily as (
         end as revenue_realization_rate,
 
         {# Moving averages (7-day) #}
-        avg(gross_revenue) over (
-            order by date_day 
+        round(avg(gross_revenue) over (
+            order by date_day
             rows between 6 preceding and current row
-        ) as gross_revenue_7d_ma,
+        ), 2) as gross_revenue_7d_ma,
 
-        avg(total_orders) over (
-            order by date_day 
+        round(avg(total_orders) over (
+            order by date_day
             rows between 6 preceding and current row
-        ) as total_orders_7d_ma,
+        ), 2) as total_orders_7d_ma,
 
         {# Year-over-year comparison #}
         lag(gross_revenue, 365) over (

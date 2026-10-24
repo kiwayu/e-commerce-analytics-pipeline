@@ -41,3 +41,15 @@ Journeys derived during this change, no separate plan file.
 - `node --test --experimental-test-coverage dashboard/format.test.js` reports 98.6% line coverage for `format.js`; the uncovered line is the browser branch of the module wrapper.
 - `app.js` (DOM and SVG rendering) has no unit tests. The empty state was verified by hand in a headless browser with the data arrays cleared; a browser-level test is the next step if the page grows.
 - Rates in the seed are fixed. Dated rates would need a date-aware join in staging.
+
+## Days without orders in revenue_daily
+
+- Added the dbt unit test `revenue_daily_counts_days_without_orders` in `dbt/models/marts/finance/revenue_daily_unit_tests.yml`, which feeds three orders on 1, 2 and 4 January and expects 3 January to appear with zero orders and the 7-day average to count it.
+- RED: `dbt test --select unit_test:revenue_daily_counts_days_without_orders` returned `FAIL 1`: 3 January was missing and the 4 January average was 53.33 instead of 40.
+- Change: `revenue_daily` now builds a calendar spine with `generate_series` between the first and last order date, left joins the per-day aggregates onto it with zero defaults, and rounds the moving averages to two decimals.
+- GREEN: the unit test passes and `dbt build` finished `PASS=128 WARN=0 ERROR=0`.
+- Because dbt unit tests need dbt 1.8 or later, the Docker `_PIP_ADDITIONAL_REQUIREMENTS` default and the standalone dbt image in the README moved from 1.6.6 to 1.9.
+
+| # | What is guaranteed | Test | Type | Result |
+|---|--------------------|------|------|--------|
+| 8 | Every calendar day between the first and last order has a `revenue_daily` row, and the 7-day averages count empty days as zero | `revenue_daily_counts_days_without_orders` | dbt unit test | PASS |
