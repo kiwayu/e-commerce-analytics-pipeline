@@ -19,11 +19,11 @@ CREATE SCHEMA IF NOT EXISTS analytics;
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'etl_user') THEN
-    CREATE ROLE etl_user LOGIN PASSWORD 'etl_password';
+    CREATE ROLE etl_user NOLOGIN;
   END IF;
   
   IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'analytics_user') THEN
-    CREATE ROLE analytics_user LOGIN PASSWORD 'analytics_password';
+    CREATE ROLE analytics_user NOLOGIN;
   END IF;
 END
 $$;

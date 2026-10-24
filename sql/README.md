@@ -196,7 +196,9 @@ GROUP BY d.year, d.month, d.month_name;
 
 ### Role-Based Access Control
 - **etl_user**: Full read/write access to raw and staging layers
-- **analytics_user**: Read-only access to marts layer  
+- **analytics_user**: Read-only access to marts layer
+
+Both roles are created with `NOLOGIN` and no password. Grant login and set a password per environment with `ALTER ROLE`.
 - **Schema-level permissions**: Granular access control
 
 ### Data Privacy Features

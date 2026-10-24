@@ -267,6 +267,8 @@ SELECT log_etl_job_end(job_uuid, 'SUCCESS', 1000, 950, 50, 0, NULL);
 
 - **etl_user**: Full read/write access to raw and staging layers
 - **analytics_user**: Read-only access to marts layer
+
+Both roles are created with `NOLOGIN` and no password. Grant login and set a password per environment with `ALTER ROLE`.
 - **Schema separation**: Logical isolation of data layers
 
 ### Data Privacy Features

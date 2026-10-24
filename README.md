@@ -159,6 +159,7 @@ CI runs the Spark unit tests, parses the Airflow DAG folder, and builds the dbt 
 
 - No secrets in version control: `.env` is gitignored, `.env.example` holds placeholders
 - Default dev credentials are for local use only; generate proper Fernet/webserver keys for anything shared
+- `schema_init.sql` creates the `etl_user` and `analytics_user` roles without login or passwords. Enable them per environment with `ALTER ROLE etl_user LOGIN PASSWORD '...'` rather than committing a password
 - Use IAM roles and a secrets manager for production deployments
 
 ## Roadmap
