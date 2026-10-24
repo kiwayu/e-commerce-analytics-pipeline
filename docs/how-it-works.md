@@ -54,3 +54,7 @@ Everything runs from one Docker Compose file under `airflow/`: PostgreSQL for th
 - **Watermarks live in Airflow Variables**, not in a control table, so the replication state is visible and editable from the Airflow UI without touching the warehouse.
 - **dbt runs as Bash tasks** rather than through an integration package, which keeps the Airflow image small and the dbt invocation identical to what you run locally.
 - **Optional dependencies skip rather than fail.** PySpark and the Slack provider are detected at import time so the pipeline runs on a laptop without either.
+
+## Dashboard
+
+The marts are the contract between the pipeline and anything that reads it, so the dashboard reads only them. `dashboard/export.py` connects with the same `DWH_POSTGRES_*` variables dbt uses, pulls `revenue_daily`, `fact_orders` and `dim_customers` into one JSON file, and the page renders that file with no framework and no build step. Keeping the page static means it can be deployed from the same CI job that proves the models build: if `dbt build` fails, nothing is published, so the published numbers always come from a warehouse whose tests passed.
