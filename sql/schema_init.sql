@@ -598,6 +598,22 @@ CREATE TABLE IF NOT EXISTS marts.dim_products (
 -- =============================================================================
 -- These tables contain measurable business events and metrics
 
+CREATE TABLE IF NOT EXISTS marts.dim_date (
+    date_key INTEGER PRIMARY KEY,
+    date_actual DATE UNIQUE NOT NULL,
+    year INTEGER,
+    quarter INTEGER,
+    month INTEGER,
+    month_name VARCHAR(20),
+    week INTEGER,
+    day_of_year INTEGER,
+    day_of_month INTEGER,
+    day_of_week INTEGER,
+    day_name VARCHAR(20),
+    is_weekend BOOLEAN,
+    is_holiday BOOLEAN
+);
+
 -- Orders Fact Table
 -- Central fact table for order transactions
 CREATE TABLE IF NOT EXISTS marts.fact_orders (
@@ -686,21 +702,6 @@ CREATE TABLE IF NOT EXISTS marts.fact_orders (
     )
 );
 
-CREATE TABLE IF NOT EXISTS marts.dim_date (
-    date_key INTEGER PRIMARY KEY,
-    date_actual DATE UNIQUE NOT NULL,
-    year INTEGER,
-    quarter INTEGER,
-    month INTEGER,
-    month_name VARCHAR(20),
-    week INTEGER,
-    day_of_year INTEGER,
-    day_of_month INTEGER,
-    day_of_week INTEGER,
-    day_name VARCHAR(20),
-    is_weekend BOOLEAN,
-    is_holiday BOOLEAN
-);
 
 -- ETL metadata and monitoring tables
 CREATE TABLE IF NOT EXISTS analytics.etl_job_log (
@@ -745,13 +746,13 @@ BEGIN
     END IF;
     
     CASE 
-        WHEN AGE(date_of_birth) < INTERVAL '18 years' THEN RETURN 'Under 18'
-        WHEN AGE(date_of_birth) < INTERVAL '25 years' THEN RETURN '18-24'
-        WHEN AGE(date_of_birth) < INTERVAL '35 years' THEN RETURN '25-34'
-        WHEN AGE(date_of_birth) < INTERVAL '45 years' THEN RETURN '35-44'
-        WHEN AGE(date_of_birth) < INTERVAL '55 years' THEN RETURN '45-54'
-        WHEN AGE(date_of_birth) < INTERVAL '65 years' THEN RETURN '55-64'
-        ELSE RETURN '65+'
+        WHEN AGE(date_of_birth) < INTERVAL '18 years' THEN RETURN 'Under 18';
+        WHEN AGE(date_of_birth) < INTERVAL '25 years' THEN RETURN '18-24';
+        WHEN AGE(date_of_birth) < INTERVAL '35 years' THEN RETURN '25-34';
+        WHEN AGE(date_of_birth) < INTERVAL '45 years' THEN RETURN '35-44';
+        WHEN AGE(date_of_birth) < INTERVAL '55 years' THEN RETURN '45-54';
+        WHEN AGE(date_of_birth) < INTERVAL '65 years' THEN RETURN '55-64';
+        ELSE RETURN '65+';
     END CASE;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
@@ -765,10 +766,10 @@ BEGIN
     END IF;
     
     CASE 
-        WHEN clv >= 10000 THEN RETURN 'Platinum'
-        WHEN clv >= 5000 THEN RETURN 'Gold'
-        WHEN clv >= 1000 THEN RETURN 'Silver'
-        ELSE RETURN 'Bronze'
+        WHEN clv >= 10000 THEN RETURN 'Platinum';
+        WHEN clv >= 5000 THEN RETURN 'Gold';
+        WHEN clv >= 1000 THEN RETURN 'Silver';
+        ELSE RETURN 'Bronze';
     END CASE;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
@@ -778,13 +779,13 @@ CREATE OR REPLACE FUNCTION get_region_from_country(country_code VARCHAR(2))
 RETURNS VARCHAR(50) AS $$
 BEGIN
     CASE UPPER(country_code)
-        WHEN 'US', 'CA', 'MX' THEN RETURN 'North America'
-        WHEN 'GB', 'DE', 'FR', 'IT', 'ES', 'NL', 'BE', 'AT', 'CH', 'SE', 'NO', 'DK', 'FI' THEN RETURN 'Europe'
-        WHEN 'JP', 'KR', 'CN', 'IN', 'SG', 'TH', 'MY', 'ID', 'PH', 'VN' THEN RETURN 'Asia Pacific'
-        WHEN 'AU', 'NZ' THEN RETURN 'Oceania'
-        WHEN 'BR', 'AR', 'CL', 'CO', 'PE', 'VE' THEN RETURN 'South America'
-        WHEN 'ZA', 'NG', 'EG', 'KE', 'MA' THEN RETURN 'Africa'
-        ELSE RETURN 'Other'
+        WHEN 'US', 'CA', 'MX' THEN RETURN 'North America';
+        WHEN 'GB', 'DE', 'FR', 'IT', 'ES', 'NL', 'BE', 'AT', 'CH', 'SE', 'NO', 'DK', 'FI' THEN RETURN 'Europe';
+        WHEN 'JP', 'KR', 'CN', 'IN', 'SG', 'TH', 'MY', 'ID', 'PH', 'VN' THEN RETURN 'Asia Pacific';
+        WHEN 'AU', 'NZ' THEN RETURN 'Oceania';
+        WHEN 'BR', 'AR', 'CL', 'CO', 'PE', 'VE' THEN RETURN 'South America';
+        WHEN 'ZA', 'NG', 'EG', 'KE', 'MA' THEN RETURN 'Africa';
+        ELSE RETURN 'Other';
     END CASE;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
@@ -1203,4 +1204,3 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA raw, staging, inter
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA raw, staging, intermediate, marts, analytics TO etl_user;
 GRANT SELECT ON ALL TABLES IN SCHEMA staging, intermediate, marts, analytics TO analytics_user;
 
-COMMIT;
