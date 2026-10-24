@@ -74,9 +74,10 @@ cleaned_shipments as (
         total_weight,
         coalesce(weight_unit, 'kg') as weight_unit,
         dimensions,
-        coalesce(shipping_cost, 0.00) as shipping_cost,
-        coalesce(insurance_cost, 0.00) as insurance_cost,
-        upper(trim(currency)) as currency,
+        round(coalesce(shipping_cost, 0.00) * fx.rate_to_base, 2) as shipping_cost,
+        round(coalesce(insurance_cost, 0.00) * fx.rate_to_base, 2) as insurance_cost,
+        upper(trim(shipments_source.currency)) as currency,
+        fx.rate_to_base as fx_rate,
         delivery_instructions,
         coalesce(signature_required, false) as signature_required,
         delivered_to,
@@ -124,6 +125,9 @@ cleaned_shipments as (
         end as shipment_status_group
 
     from shipments_source
+
+    left join {{ ref('fx_rates') }} as fx
+        on fx.currency = upper(trim(shipments_source.currency))
 
 ),
 

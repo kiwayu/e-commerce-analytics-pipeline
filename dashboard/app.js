@@ -6,40 +6,18 @@
   var tooltip = document.getElementById("tooltip");
   var currentWindow = "30";
 
-  // Formatting ---------------------------------------------------------------
+  var fmt = window.fmt;
+  var int = fmt.int, pct = fmt.pct, compact = fmt.compact, money = fmt.money, moneyFull = fmt.moneyFull;
+  var day = fmt.day, dayLong = fmt.dayLong, stamp = fmt.stamp, words = fmt.words, niceTicks = fmt.niceTicks;
 
-  var nf = new Intl.NumberFormat("en-GB");
-  function int(n) { return nf.format(Math.round(n)); }
-  function pct(n) { return Math.round(n * 100) + "%"; }
-  function compact(n) {
-    var a = Math.abs(n);
-    if (a >= 1e6) return (n / 1e6).toFixed(2) + "M";
-    if (a >= 1e4) return (n / 1e3).toFixed(0) + "K";
-    if (a >= 1e3) return (n / 1e3).toFixed(1) + "K";
-    return int(n);
-  }
-  function money(n) { return "$" + compact(n); }
-  function moneyFull(n) { return "$" + nf.format(Math.round(n)); }
-  function day(iso) {
-    var d = new Date(iso + "T00:00:00Z");
-    return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
-  }
-  function dayLong(iso) {
-    var d = new Date(iso + "T00:00:00Z");
-    return d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
-  }
-  function stamp(iso) {
-    var d = new Date(iso);
-    return d.toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "UTC" }) + " UTC";
-  }
-  function words(s) {
-    if (s === "vip") return "VIP";
-    s = String(s).replace(/_/g, " ");
-    return s.charAt(0).toUpperCase() + s.slice(1);
-  }
   function widthOf(id, fallback) {
     var w = document.getElementById(id).clientWidth;
     return w > 200 ? w : fallback;
+  }
+
+  function empty(id, tableId) {
+    replace(id, el("p", { "class": "empty" }, "No orders in this period."));
+    if (tableId) replace(tableId, null);
   }
 
   // DOM helpers ----------------------------------------------------------------
@@ -111,16 +89,6 @@
   }
   function hideTip() { tooltip.hidden = true; }
 
-  function niceTicks(max, count) {
-    var raw = max / count;
-    var mag = Math.pow(10, Math.floor(Math.log10(raw)));
-    var step = [1, 2, 2.5, 5, 10].map(function (m) { return m * mag; }).filter(function (s) { return s >= raw; })[0];
-    var ticks = [];
-    for (var v = 0; v <= max + step * 0.001; v += step) ticks.push(v);
-    if (ticks[ticks.length - 1] < max) ticks.push(ticks[ticks.length - 1] + step);
-    return ticks;
-  }
-
   // Pipeline strip -----------------------------------------------------------
 
   function renderPipeline() {
@@ -165,22 +133,11 @@
     ];
     var host = replace("tiles", null);
     tiles.forEach(function (t) {
-      var delta, cls = "", text;
-      if (!prev.orders) {
-        text = "No earlier period to compare";
-      } else if (t.points) {
-        delta = (t.cur - t.prev) * 100;
-        cls = delta > 0.5 ? "up" : delta < -0.5 ? "down" : "";
-        text = (delta > 0 ? "+" : "") + delta.toFixed(1) + " pts";
-      } else {
-        delta = t.prev ? (t.cur - t.prev) / t.prev * 100 : 0;
-        cls = delta > 0.5 ? "up" : delta < -0.5 ? "down" : "";
-        text = (delta > 0 ? "+" : "") + delta.toFixed(1) + "%";
-      }
+      var d = prev.orders ? fmt.delta(t.cur, t.prev, t.points) : null;
       host.appendChild(el("div", { "class": "tile" }, [
         el("div", { "class": "label" }, t.label),
         el("div", { "class": "value" }, t.value),
-        el("div", { "class": "delta " + cls }, delta === undefined ? text : [el("b", null, text), " vs previous " + days + " days"])
+        el("div", { "class": "delta " + (d ? d.dir : "") }, d ? [el("b", null, d.text), " vs previous " + days + " days"] : "No earlier period to compare")
       ]));
     });
     document.getElementById("compare").textContent = "Changes compare with the " + days + " days before";
@@ -191,6 +148,7 @@
   function renderRevenue() {
     var days = Number(currentWindow);
     var rows = DATA.daily.slice(-days);
+    if (!rows.length) return empty("revenue-chart", "revenue-table");
     var W = widthOf("revenue-chart", 1100), H = W < 600 ? 220 : 300, L = 44, R = 16, T = 12, B = 28;
     var pw = W - L - R, ph = H - T - B;
     var max = Math.max.apply(null, rows.map(function (r) { return Math.max(r.gross_revenue, r.gross_revenue_7d_ma); }));
@@ -266,6 +224,7 @@
   // Horizontal bars ----------------------------------------------------------
 
   function renderBars(chartId, tableId, rows, opts) {
+    if (!rows.length) return empty(chartId, tableId);
     var W = widthOf(chartId, 540), rowH = 34, L = W < 420 ? 118 : 150, R = 72, T = 4;
     var H = T + rows.length * rowH + 4;
     var pw = W - L - R;

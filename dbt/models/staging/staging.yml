@@ -7,6 +7,10 @@ models:
       Applies consistent data types, handles null values, 
       and adds derived business logic fields.
     columns:
+      - name: fx_rate
+        description: Rate applied to express the amounts in the base currency; null means an unknown currency
+        tests:
+          - not_null
       - name: order_id
         description: Unique business identifier for the order
         tests:

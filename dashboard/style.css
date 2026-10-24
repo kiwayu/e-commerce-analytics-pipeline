@@ -202,6 +202,8 @@ details table { margin-top: 6px; }
 .rate { display: inline-block; width: 72px; height: 8px; background: var(--grid); vertical-align: middle; margin-right: 10px; }
 .rate i { display: block; height: 100%; background: var(--s1); }
 
+.empty { color: var(--muted); padding: 24px 0; }
+
 footer { padding: 8px 0 40px; color: var(--muted); max-width: 80ch; }
 
 .tooltip {

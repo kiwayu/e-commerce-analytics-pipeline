@@ -44,6 +44,25 @@ orders_source as (
 
 ),
 
+converted_orders as (
+
+    {# Express every amount in the base currency (vars.base_currency) #}
+    select
+        orders_source.*,
+        orders_source.total_amount as total_amount_original,
+        fx.rate_to_base as fx_rate,
+        round(orders_source.total_amount * fx.rate_to_base, 2) as total_amount_base,
+        round(coalesce(orders_source.discount_amount, 0.00) * fx.rate_to_base, 2) as discount_amount_base,
+        round(coalesce(orders_source.tax_amount, 0.00) * fx.rate_to_base, 2) as tax_amount_base,
+        round(coalesce(orders_source.shipping_cost, 0.00) * fx.rate_to_base, 2) as shipping_cost_base
+
+    from orders_source
+
+    left join {{ ref('fx_rates') }} as fx
+        on fx.currency = upper(trim(orders_source.currency))
+
+),
+
 cleaned_orders as (
 
     select
@@ -52,15 +71,17 @@ cleaned_orders as (
         customer_id,
         cast(order_date as timestamp) as order_date,
         lower(trim(order_status)) as order_status,
-        total_amount,
+        total_amount_base as total_amount,
+        total_amount_original,
+        fx_rate,
         upper(trim(currency)) as currency,
         lower(trim(payment_method)) as payment_method,
         shipping_address,
         billing_address,
         order_items,
-        coalesce(discount_amount, 0.00) as discount_amount,
-        coalesce(tax_amount, 0.00) as tax_amount,
-        coalesce(shipping_cost, 0.00) as shipping_cost,
+        discount_amount_base as discount_amount,
+        tax_amount_base as tax_amount,
+        shipping_cost_base as shipping_cost,
         notes,
         source_system,
         source_file,
@@ -70,8 +91,8 @@ cleaned_orders as (
 
         {# Derived fields #}
         case
-            when total_amount >= 1000 then 'high_value'
-            when total_amount >= 100 then 'medium_value'
+            when total_amount_base >= 1000 then 'high_value'
+            when total_amount_base >= 100 then 'medium_value'
             else 'low_value'
         end as order_value_tier,
 
@@ -82,10 +103,10 @@ cleaned_orders as (
             else 'unknown'
         end as order_status_group,
 
-        total_amount - discount_amount as net_amount,
-        total_amount + tax_amount + shipping_cost as gross_amount
+        total_amount_base - discount_amount_base as net_amount,
+        total_amount_base + tax_amount_base + shipping_cost_base as gross_amount
 
-    from orders_source
+    from converted_orders
 
 )
 

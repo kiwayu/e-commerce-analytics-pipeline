@@ -7,7 +7,7 @@ A local-first ETL pipeline for e-commerce analytics using Apache Airflow, dbt, a
 ## Architecture
 
 - **Orchestration**: Apache Airflow 3.3 (CeleryExecutor: API server, scheduler, DAG processor, worker, triggerer, Redis)
-- **Transformation**: dbt-core 1.6 (staging → intermediate → marts, 100+ schema tests)
+- **Transformation**: dbt-core 1.6+ (staging → intermediate → marts, 100+ schema tests). Amounts arrive in five currencies and are converted to USD in staging with the `fx_rates` seed
 - **Storage**: PostgreSQL 15 (separate metadata DB and data warehouse)
 - **Ingestion**: Custom incremental replication operator (watermark-based upsert), plus optional API/PySpark file ingestion
 - **Quality**: dbt tests + SQL business-metric validation (Great Expectations checkpoints are a stretch goal)
