@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/kiwayu/e-commerce-analytics-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/kiwayu/e-commerce-analytics-pipeline/actions/workflows/ci.yml)
 
-A local-first ETL pipeline for e-commerce analytics using Apache Airflow, dbt, and PostgreSQL, orchestrated with Docker Compose.
+A local-first ETL pipeline for e-commerce analytics using Apache Airflow, dbt, and PostgreSQL, orchestrated with Docker Compose. The marts feed a small static dashboard that is rebuilt and published on every push: https://kiwayu.github.io/e-commerce-analytics-pipeline/
 
 ## Architecture
 
@@ -11,6 +11,7 @@ A local-first ETL pipeline for e-commerce analytics using Apache Airflow, dbt, a
 - **Storage**: PostgreSQL 15 (separate metadata DB and data warehouse)
 - **Ingestion**: Custom incremental replication operator (watermark-based upsert), plus optional API/PySpark file ingestion
 - **Quality**: dbt tests + SQL business-metric validation (Great Expectations checkpoints are a stretch goal)
+- **Dashboard**: plain HTML, CSS and JavaScript over a JSON export of the marts, deployed to GitHub Pages from CI
 
 ## Project Structure
 
@@ -29,6 +30,9 @@ e-commerce-analytics-pipeline/
 │   ├── macros/
 │   ├── profiles.yml           # env-var driven connection profiles
 │   └── dbt_project.yml
+├── dashboard/
+│   ├── export.py              # marts -> data.js
+│   └── index.html             # static dashboard (no build step)
 ├── spark/                     # optional API/file ingestion jobs
 ├── sql/
 │   ├── schema_init.sql        # warehouse schemas + raw/staging tables
@@ -72,6 +76,34 @@ Access:
 - Warehouse: `localhost:5432`, database `ecommerce`
 - Flower (optional): `docker compose --profile flower up -d`, then http://localhost:5555
 - pgAdmin (optional): `docker compose --profile admin up -d`, then http://localhost:5050
+
+## Running Without Docker
+
+If you have PostgreSQL installed locally, the warehouse and dbt layers run on their own:
+
+```bash
+# Schema, roles and sample data (needs a superuser for the CREATE DATABASE step)
+psql -U postgres -v ON_ERROR_STOP=1 -f sql/schema_init.sql
+psql -U postgres -d ecommerce -v ON_ERROR_STOP=1 -f sql/seed_sample_data.sql
+
+# dbt (Python 3.9 to 3.13)
+pip install "dbt-postgres==1.9.1" "psycopg[binary]"
+cd dbt
+DBT_PROFILES_DIR=. DWH_POSTGRES_USER=postgres DWH_POSTGRES_PASSWORD=<your password> dbt deps
+DBT_PROFILES_DIR=. DWH_POSTGRES_USER=postgres DWH_POSTGRES_PASSWORD=<your password> dbt build
+cd ..
+
+# Refresh the dashboard from the marts, then open dashboard/index.html
+DWH_POSTGRES_USER=postgres DWH_POSTGRES_PASSWORD=<your password> python dashboard/export.py
+```
+
+This is the same sequence CI runs against a PostgreSQL service container before deploying the dashboard.
+
+## Dashboard
+
+`dashboard/` is a static page with no framework and no build step. `export.py` reads the marts with the same `DWH_POSTGRES_*` variables dbt uses and writes `data.js`: daily revenue, headline figures for the last 7, 30 and 90 days with the previous period for comparison, breakdowns by status, segment, carrier and country, and the row counts and dbt results for the pipeline strip at the top. The page renders its charts as inline SVG and every chart has a table view.
+
+The committed `data.js` is a snapshot from a local run so the page works straight from a checkout. The `dbt-build` CI job regenerates it and the `deploy-dashboard` job publishes the folder to GitHub Pages on pushes to `main`.
 
 ## Data Pipeline
 
@@ -121,6 +153,8 @@ dbt build
 cd airflow && python -m pytest test_dag_structure.py
 ```
 
+CI runs the Spark unit tests, parses the Airflow DAG folder, and builds the dbt project end to end (schema, seed, `dbt build`, dashboard export) against a PostgreSQL 15 service container.
+
 ## Security Notes
 
 - No secrets in version control: `.env` is gitignored, `.env.example` holds placeholders
@@ -132,4 +166,3 @@ cd airflow && python -m pytest test_dag_structure.py
 - Great Expectations checkpoint suite for the marts layer
 - PySpark file ingestion enabled in-container
 - External API ingestion with configurable sources
-- CI: dbt build + DAG import checks on pull requests

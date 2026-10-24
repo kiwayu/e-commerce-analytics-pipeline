@@ -46,3 +46,60 @@ jobs:
           PY
       - name: DAG structure checks
         run: python airflow/test_dag_structure.py
+
+  dbt-build:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      DWH_POSTGRES_HOST: localhost
+      DWH_POSTGRES_USER: postgres
+      DWH_POSTGRES_PASSWORD: postgres
+      DBT_PROFILES_DIR: ${{ github.workspace }}/dbt
+      DBT_SEND_ANONYMOUS_USAGE_STATS: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install "dbt-postgres==1.9.1" "psycopg[binary]"
+      - name: Create warehouse schema and seed sample data
+        run: |
+          psql -v ON_ERROR_STOP=1 -q -f sql/schema_init.sql
+          psql -v ON_ERROR_STOP=1 -q -d ecommerce -f sql/seed_sample_data.sql
+      - name: dbt build
+        working-directory: dbt
+        run: |
+          dbt deps
+          dbt build
+      - name: Export dashboard data
+        run: python dashboard/export.py
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dashboard
+
+  deploy-dashboard:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: dbt-build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
