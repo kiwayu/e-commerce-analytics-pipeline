@@ -1,0 +1,18 @@
+version: 2
+
+unit_tests:
+  - name: revenue_daily_counts_days_without_orders
+    description: A day with no orders still appears with zero revenue and is counted in the 7-day average.
+    model: revenue_daily
+    given:
+      - input: ref('fact_orders')
+        rows:
+          - {order_date: "2026-01-01 10:00:00", order_status_group: fulfilled, total_amount: 100, fulfilled_revenue: 100, cancelled_revenue: 0, returned_revenue: 0, has_returns: false, clean_order: true, customer_segment: vip, customer_country: GB}
+          - {order_date: "2026-01-02 11:00:00", order_status_group: fulfilled, total_amount: 50, fulfilled_revenue: 50, cancelled_revenue: 0, returned_revenue: 0, has_returns: false, clean_order: true, customer_segment: vip, customer_country: GB}
+          - {order_date: "2026-01-04 12:00:00", order_status_group: cancelled, total_amount: 10, fulfilled_revenue: 0, cancelled_revenue: 10, returned_revenue: 0, has_returns: false, clean_order: true, customer_segment: new_customer, customer_country: US}
+    expect:
+      rows:
+        - {date_day: "2026-01-01", total_orders: 1, gross_revenue: 100, gross_revenue_7d_ma: 100}
+        - {date_day: "2026-01-02", total_orders: 1, gross_revenue: 50, gross_revenue_7d_ma: 75}
+        - {date_day: "2026-01-03", total_orders: 0, gross_revenue: 0, gross_revenue_7d_ma: 50}
+        - {date_day: "2026-01-04", total_orders: 1, gross_revenue: 10, gross_revenue_7d_ma: 40}
